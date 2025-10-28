@@ -1,0 +1,518 @@
+/* ---------------------------------- */
+/* 1. THEME, FONTS, & ANIMATIONS     */
+/* ---------------------------------- */
+
+:root {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  
+  /* -- Light Theme -- */
+  --grad-header-light: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+  --grad-text-light: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  --bg-light: #f4f7f9;
+  --surface-light: rgba(255, 255, 255, 0.7);
+  --text-primary-light: #2c3e50;
+  --text-secondary-light: #8492a6;
+  --border-light: rgba(0, 0, 0, 0.1);
+  --glow-light: rgba(79, 172, 254, 0.4);
+
+  /* -- Dark Theme -- */
+  --grad-header-dark: linear-gradient(45deg, #3a3897 0%, #a3a1ff 100%);
+  --grad-text-dark: linear-gradient(90deg, #8a78f0, #f871ab);
+  --bg-dark: #161925;
+  --surface-dark: rgba(30, 35, 50, 0.6);
+  --text-primary-dark: #e0e6f0;
+  --text-secondary-dark: #a0aec0;
+  --border-dark: rgba(255, 255, 255, 0.1);
+  --glow-dark: rgba(138, 120, 240, 0.5);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------------- */
+/* 2. GLOBAL & MAIN LAYOUT           */
+/* ---------------------------------- */
+.container {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background-color: var(--bg-light);
+  color: var(--text-primary-light);
+  transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: var(--bg-dark);
+    color: var(--text-primary-dark);
+  }
+}
+
+.main {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* ---------------------------------- */
+/* 3. HERO HEADER                    */
+/* ---------------------------------- */
+
+.profileHeader {
+  background-image: var(--grad-header-light);
+  color: #fff;
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .profileHeader {
+    background-image: var(--grad-header-dark);
+  }
+}
+
+/* Subtle background pattern */
+.profileHeader::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80"><path fill="%23ffffff" fill-opacity="0.1" d="M10 10 H70 V70 H10Z M20 20 H60 V60 H20Z M30 30 H50 V50 H30Z"></path></svg>');
+  opacity: 0.5;
+}
+
+.playerName {
+  font-size: clamp(2rem, 1rem + 4vw, 3.5rem);
+  font-weight: 800;
+  margin: 0 0 1.5rem 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative; /* Ensure it's above the pattern */
+}
+
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  position: relative;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: var(--transition-smooth);
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* ---------------------------------- */
+/* 4. MAIN CONTENT GRID              */
+/* ---------------------------------- */
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .gridContainer {
+    /* Asymmetrical layout - chart takes up more space */
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.dataCard {
+  background-color: var(--surface-light);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  backdrop-filter: blur(10px);
+  transition: var(--transition-smooth);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dataCard {
+    background-color: var(--surface-dark);
+    border-color: var(--border-dark);
+  }
+}
+
+.dataCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px 0 var(--glow-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dataCard:hover {
+    box-shadow: 0 0 20px 0 var(--glow-dark);
+  }
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  background-image: var(--grad-text-light);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sectionTitle {
+    background-image: var(--grad-text-dark);
+  }
+}
+
+/* ---------------------------------- */
+/* 5. COMPONENTS & EXTRAS            */
+/* ---------------------------------- */
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary-light);
+  text-decoration: none;
+  transition: var(--transition-smooth);
+}
+
+@media (prefers-color-scheme: dark) {
+  .backLink {
+    color: var(--text-primary-dark);
+  }
+}
+
+.backLink:hover {
+  transform: translateX(-4px);
+}
+
+.chartWrapper {
+  height: 400px; /* Give the chart a bit more vertical space */
+}
+
+.matchHistoryContainer {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px; /* Space for the scrollbar */
+}
+
+/* -- Custom Scrollbar -- */
+.matchHistoryContainer::-webkit-scrollbar {
+  width: 8px;
+}
+.matchHistoryContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.matchHistoryContainer::-webkit-scrollbar-thumb {
+  background-color: var(--border-light);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+@media (prefers-color-scheme: dark) {
+  .matchHistoryContainer::-webkit-scrollbar-thumb {
+    background-color: var(--border-dark);
+  }
+}
+/* ---------------------------------- */
+/* 6. EXPRESSIVE TOOLTIP STYLES      */
+/* ---------------------------------- */
+
+.customTooltip {
+  min-width: 220px;
+  background: var(--surface-light);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  
+  /* Gradient Border Effect */
+  background-clip: padding-box; /* Crucial for border to show */
+  border: solid 1px transparent;
+  position: relative;
+
+  /* Entry Animation */
+  animation: fadeInUp 0.3s ease;
+}
+
+.customTooltip::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -1px; /* Must be negative border width */
+  border-radius: inherit; /* Follow the parent's border-radius */
+  background: var(--grad-text-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .customTooltip {
+    background: var(--surface-dark);
+  }
+  .customTooltip::before {
+    background: var(--grad-text-dark);
+  }
+}
+
+.tooltipHeader, .tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tooltipHeader {
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tooltipHeader {
+    border-color: var(--border-dark);
+  }
+}
+
+.tooltipEventName {
+  font-weight: 600;
+  color: var(--text-primary-light);
+}
+@media (prefers-color-scheme: dark) {
+  .tooltipEventName {
+    color: var(--text-primary-dark);
+  }
+}
+
+.tooltipRow {
+  margin-top: 0.5rem;
+  justify-content: space-between;
+}
+
+.tooltipLabel {
+  color: var(--text-secondary-light);
+  font-size: 0.875rem;
+}
+@media (prefers-color-scheme: dark) {
+  .tooltipLabel {
+    color: var(--text-secondary-dark);
+  }
+}
+
+.tooltipValue {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text-primary-light);
+}
+@media (prefers-color-scheme: dark) {
+  .tooltipValue {
+    color: var(--text-primary-dark);
+  }
+}
+
+.tooltipIcon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  stroke: var(--text-secondary-light);
+}
+@media (prefers-color-scheme: dark) {
+  .tooltipIcon {
+    stroke: var(--text-secondary-dark);
+  }
+}
+/* ---------------------------------- */
+/* 7. EVENT HISTORY LIST STYLES      */
+/* ---------------------------------- */
+
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.eventItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventItem {
+    border-color: var(--border-dark);
+  }
+}
+
+.eventItem:hover {
+  background-color: var(--glow-light);
+  transform: translateX(5px);
+  border-bottom-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventItem:hover {
+    background-color: var(--glow-dark);
+  }
+}
+
+.eventName {
+  font-weight: 500;
+  color: var(--text-secondary-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventName {
+    color: var(--text-secondary-dark);
+  }
+}
+
+.eventRank {
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  background-image: var(--grad-text-light);
+  color: #fff;
+  min-width: 45px;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventRank {
+    background-image: var(--grad-text-dark);
+  }
+}
+
+.emptyHistoryMessage {
+  text-align: center;
+  padding: 2rem 0;
+  color: var(--text-secondary-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .emptyHistoryMessage {
+    color: var(--text-secondary-dark);
+  }
+}
+/* ---------------------------------- */
+/* 8. MEDAL RANK STYLES (NEW)        */
+/* ---------------------------------- */
+
+.eventRank {
+  /* ... keep your existing .eventRank styles ... */
+  transition: all 0.3s ease;
+}
+
+/* Gold for #1 */
+.rankGold {
+  background-image: linear-gradient(45deg, #ffd700, #ffb800);
+  color: #4a2c00;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+}
+
+/* Silver for #2 */
+.rankSilver {
+  background-image: linear-gradient(45deg, #c0c0c0, #e8e8e8);
+  color: #3a3a3a;
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.7);
+}
+
+/* Bronze for #3 */
+.rankBronze {
+  background-image: linear-gradient(45deg, #cd7f32, #a0522d);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.7);
+}
+
+/* ---------------------------------- */
+/* 9. EVENT LINK STYLES (NEW)        */
+/* ---------------------------------- */
+
+.eventLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* This is the key fix */
+  text-decoration: none; 
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+/* MODIFICATION: Move padding from the item to the link and adjust hover */
+.eventItem {
+  display: flex; /* Keep this for layout */
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.2s ease-in-out;
+  padding: 0; /* Remove padding from here */
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventItem {
+    border-color: var(--border-dark);
+  }
+}
+
+.eventItem:hover {
+  background-color: var(--glow-light);
+  transform: translateX(5px);
+  border-bottom-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventItem:hover {
+    background-color: var(--glow-dark);
+  }
+}
+
+/* Adjust the eventName to inherit color from the link */
+.eventName {
+  color: var(--text-secondary-light);
+  /* ... other styles are fine ... */
+}
+
+@media (prefers-color-scheme: dark) {
+  .eventName {
+    color: var(--text-secondary-dark);
+  }
+}

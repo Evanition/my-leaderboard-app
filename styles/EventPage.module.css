@@ -1,0 +1,131 @@
+/* NEW FILE */
+
+/* Re-using the expressive theme from the main leaderboard */
+:root {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --grad-primary: linear-gradient(90deg, #4f46e5, #fb7185);
+  --grad-background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  --color-surface: rgba(31, 41, 55, 0.6);
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-glow: rgba(79, 70, 229, 0.5);
+  --shadow-md: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --grad-primary: linear-gradient(90deg, #007cf0, #00dfd8);
+    --grad-background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --color-surface: rgba(255, 255, 255, 0.7);
+    --color-text-primary: #2d3748;
+    --color-text-secondary: #718096;
+    --color-border: rgba(0, 0, 0, 0.1);
+    --color-glow: rgba(0, 124, 240, 0.4);
+    --shadow-md: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  }
+}
+
+.container {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background-image: var(--grad-background);
+}
+
+.main {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4rem) 1rem;
+}
+
+.title {
+  font-size: clamp(2rem, 1rem + 4vw, 3rem);
+  font-weight: 800;
+  text-align: center;
+  background: var(--grad-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin-top: -1rem;
+  margin-bottom: 3rem;
+  font-weight: 500;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+/* --- Table Styles (Similar to main leaderboard) --- */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.eventTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border);
+}
+
+.eventTable th,
+.eventTable td {
+  padding: 18px 22px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-border);
+}
+
+.eventTable thead th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.eventTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.playerCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.playerAvatar {
+  border-radius: 50%;
+}
+
+.eventTable a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.eventTable td:first-child {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+  width: 5%;
+}
+
+.eventTable td:last-child {
+  text-align: right;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
