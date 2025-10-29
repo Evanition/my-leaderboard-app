@@ -6,26 +6,34 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
+        protocol: 'httpshttps',
         hostname: 'cravatar.eu',
         port: '',
         pathname: '/avatar/**',
       },
     ],
-    unoptimized: true,
   },
-  // --- ADD THIS NEW SECTION ---
   async headers() {
     return [
       {
-        // This targets ALL files inside your /public/logos/ folder
+        // This rule caches your self-hosted logos
         source: '/logos/:all*',
         headers: [
           {
             key: 'Cache-Control',
-            // public: allowed to be cached by anyone (browsers, CDNs)
-            // max-age=31536000: cache for 1 year (in seconds)
-            // immutable: promises the file will NEVER change
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // --- THIS IS THE NEW RULE FOR PLAYER AVATARS ---
+        // It targets all images processed by the Next.js Image component
+        source: '/_next/image',
+        headers: [
+          {
+            key: 'Cache-Control',
+            // This tells browsers (and Vercel's CDN) to cache the
+            // unoptimized image for one year.
             value: 'public, max-age=31536000, immutable',
           },
         ],
