@@ -123,6 +123,7 @@ export default function Home() {
                           width={32}
                           height={32}
                           className={styles.playerAvatar}
+                          unoptimized // <-- ADD THIS PROP
                         />
                         <Link href={`/player/${encodeURIComponent(player.Player_Name)}`}>
                           {player.Player_Name}

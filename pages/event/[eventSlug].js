@@ -101,6 +101,7 @@ export default function EventPage() {
                         width={32}
                         height={32}
                         className={styles.playerAvatar}
+                        unoptimized
                       />
                       <Link href={`/player/${encodeURIComponent(player.player_name)}`}>
                         {player.player_name}
