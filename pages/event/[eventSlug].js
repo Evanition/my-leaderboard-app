@@ -1,54 +1,67 @@
+"use client";
+
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router'; // Use 'next/router' for the Pages Router
 import styles from '../../styles/EventPage.module.css';
-import historyDataAll from '../../data/rating_history_full.json';
-import { slugify } from '../../utils/slugify'; // MODIFICATION: Import the slugify function
+import historyDataAll from '../../public/rating_history_full.json';
+import { slugify } from '../../utils/slugify';
 
-// This tells Next.js which event pages to build using slugs
-export async function getStaticPaths() {
-  const allEventNames = historyDataAll.map(entry => entry.event_name);
-  const uniqueEventNames = [...new Set(allEventNames)].filter(name => name !== "Rating Decay");
+// The Event Page Component (Client-Side)
+export default function EventPage() {
+  const router = useRouter();
+  const { eventSlug } = router.query; // Get the slug from the URL
 
-  // MODIFICATION: Create paths using the slugified name
-  const paths = uniqueEventNames.map(name => ({
-    params: { eventSlug: slugify(name) },
-  }));
+  // State to hold event data, initialized to empty/loading states
+  const [eventName, setEventName] = useState('');
+  const [eventPlayers, setEventPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  return { paths, fallback: false };
-}
+  useEffect(() => {
+    // We only run the logic if the router is ready and the eventSlug exists
+    if (!router.isReady) {
+      return;
+    }
 
-// This fetches the data for a single event page by its slug
-export async function getStaticProps({ params }) {
-  const { eventSlug } = params;
+    // Find the original event name by matching its slugified version
+    const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
 
-  // MODIFICATION: Find the original event name by matching its slug
-  const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
+    // If an event is found, process its data
+    if (eventEntry) {
+      const originalEventName = eventEntry.event_name;
+      setEventName(originalEventName);
 
-  if (!eventEntry) {
-    return { notFound: true };
+      // Filter the history to get all players from this event and sort them
+      const eventData = historyDataAll
+        .filter(entry => entry.event_name === originalEventName)
+        .sort((a, b) => a.rank_at_event - b.rank_at_event);
+      
+      setEventPlayers(eventData);
+    }
+
+    // Set loading to false once data processing is complete
+    setLoading(false);
+
+  }, [router.isReady, eventSlug]); // Rerun this effect when the router is ready or the slug changes
+
+  // Display a loading message while data is being prepared
+  if (loading) {
+    return <p>Loading event data...</p>;
   }
-  
-  const originalEventName = eventEntry.event_name;
 
-  // Filter the history to get all players from this event
-  const eventData = historyDataAll
-    .filter(entry => entry.event_name === originalEventName)
-    .sort((a, b) => a.rank_at_event - b.rank_at_event);
+  // Display a not found message if no event name was set after loading
+  if (!eventName) {
+    return <p>Event not found.</p>;
+  }
 
-  return {
-    props: {
-      eventName: originalEventName,
-      eventPlayers: eventData,
-    },
-  };
-}
-
-// The Event Page Component (no major changes here)
-export default function EventPage({ eventName, eventPlayers }) {
-  const eventDate = new Date(eventPlayers[0].event_date).toLocaleDateString(undefined, {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
+  // Calculate the event date only when we have the data
+  const eventDate = eventPlayers.length > 0 
+    ? new Date(eventPlayers[0].event_date).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'long', day: 'numeric'
+      }) 
+    : '';
 
   return (
     <div className={styles.container}>
@@ -61,7 +74,7 @@ export default function EventPage({ eventName, eventPlayers }) {
           &larr; Back to Leaderboard
         </Link>
         <h1 className={styles.title}>{eventName}</h1>
-        <p className={styles.subtitle}>{eventDate}</p>
+        {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
         <div className={styles.tableWrapper}>
           <table className={styles.eventTable}>
             <thead>

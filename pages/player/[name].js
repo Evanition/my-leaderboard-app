@@ -1,76 +1,76 @@
 import Head from 'next/head';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useRouter } from 'next/router'; // <-- CORRECT IMPORT FOR PAGES ROUTER
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush
 } from 'recharts';
 import styles from '../../styles/PlayerProfile.module.css';
 import CustomTooltip from '../../components/CustomTooltip';
-import historyDataAll from '../../data/rating_history_full.json';
-import leaderboardData from '../../data/final_leaderboard.json';
+import historyDataAll from '../../public/rating_history_full.json';
+import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
 
-// --- This tells Next.js which player pages to build ---
-export async function getStaticPaths() {
-  const playersArray = Array.isArray(leaderboardData) ? leaderboardData : Object.values(leaderboardData);
-  const paths = playersArray.map((player) => ({
-    params: { name: encodeURIComponent(player.Player_Name) },
-  }));
-  return { paths, fallback: false };
-}
+// --- The Player Profile Component (Client-Side) ---
+export default function PlayerProfile() {
+  const router = useRouter();
+  // We get 'name' from router.query, but it might not be ready on first render.
+  const { name } = router.query; 
 
-// --- This fetches the data for a single player page ---
-export async function getStaticProps({ params }) {
-  const name = decodeURIComponent(params.name);
-  const playerHistoryRaw = Array.isArray(historyDataAll) ? historyDataAll : Object.values(historyDataAll);
-  
-  // Get all history for the player, sorted chronologically (oldest to newest) for calculations.
-  const playerHistoryChronological = playerHistoryRaw
-    .filter(entry => entry.player_name === name)
-    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  const [playerName, setPlayerName] = useState('');
+  const [playerSummary, setPlayerSummary] = useState(null);
+  const [eventHistory, setEventHistory] = useState([]);
+  const [chartData, setChartData] = useState([]);
+  const [peakRating, setPeakRating] = useState('0.00');
+  const [loading, setLoading] = useState(true); // Start in a loading state
 
-  const playerSummary = leaderboardData.find(player => player.Player_Name === name);
-
-  if (!playerHistoryChronological.length) {
-    return { notFound: true };
-  }
-
-  let peakRating = 0;
-
-  // Calculate chartData based on the correct chronological order.
-  const chartData = playerHistoryChronological.map((entry, index) => {
-    const rating = parseFloat(entry.rating_after);
-    if (rating > peakRating) {
-      peakRating = rating;
+  useEffect(() => {
+    // Only run the data fetching logic when the router is ready and 'name' is available.
+    if (!router.isReady) {
+      return; 
     }
-    const previousRating = index > 0 ? parseFloat(playerHistoryChronological[index - 1].rating_after) : 1000.00;
-    const ratingChange = rating - previousRating;
 
-    return {
-      date: new Date(entry.event_date).toISOString(),
-      rating: rating,
-      event: entry.event_name,
-      change: ratingChange.toFixed(2),
-      rank: entry.rank_at_event || null,
-    };
-  });
-  
-  // Create a reversed version of the history for the UI list (newest first).
-  const eventHistoryForList = [...playerHistoryChronological].reverse();
+    const decodedName = decodeURIComponent(name);
+    setPlayerName(decodedName);
 
-  return {
-    props: {
-      playerName: name,
-      playerSummary,
-      eventHistory: eventHistoryForList,
-      chartData,
-      peakRating: peakRating.toFixed(2),
-    },
-  };
-}
+    // --- All the data processing logic is moved inside useEffect ---
+    const playerHistoryRaw = Array.isArray(historyDataAll) ? historyDataAll : Object.values(historyDataAll);
+    
+    const playerHistoryChronological = playerHistoryRaw
+      .filter(entry => entry.player_name === decodedName)
+      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
-// --- The Player Profile Component ---
-export default function PlayerProfile({ playerName, playerSummary, eventHistory, chartData, peakRating }) {
+    const summary = leaderboardData.find(player => player.Player_Name === decodedName);
+    setPlayerSummary(summary);
+
+    if (playerHistoryChronological.length) {
+      let peak = 0;
+      const calculatedChartData = playerHistoryChronological.map((entry, index) => {
+        const rating = parseFloat(entry.rating_after);
+        if (rating > peak) {
+          peak = rating;
+        }
+        const previousRating = index > 0 ? parseFloat(playerHistoryChronological[index - 1].rating_after) : 1000.00;
+        const ratingChange = rating - previousRating;
+
+        return {
+          date: new Date(entry.event_date).toISOString(),
+          rating: rating,
+          event: entry.event_name,
+          change: ratingChange.toFixed(2),
+          rank: entry.rank_at_event || null,
+        };
+      });
+      
+      setChartData(calculatedChartData);
+      setPeakRating(peak.toFixed(2));
+      setEventHistory([...playerHistoryChronological].reverse());
+    }
+    
+    setLoading(false); // Data is processed, stop loading
+
+  }, [router.isReady, name]); // Dependency array ensures this runs when the router is ready
+
   const processedChartData = useMemo(() => {
     return chartData.map(entry => ({
       ...entry,
@@ -87,10 +87,16 @@ export default function PlayerProfile({ playerName, playerSummary, eventHistory,
     return '';
   };
 
+  // --- Render Loading and Not Found States ---
+  if (loading) {
+    return <p>Loading player data...</p>;
+  }
+
   if (!playerSummary) {
     return <p>Player not found.</p>;
   }
 
+  // --- Render the main component JSX ---
   return (
     <div className={styles.container}>
       <Head>

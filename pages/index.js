@@ -1,22 +1,63 @@
+"use client";
+
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react'; // Import useEffect
 import styles from '../styles/Home.module.css';
-import leaderboardData from '../data/final_leaderboard.json';
-import historyDataAll from '../data/rating_history_full.json';
+// We no longer import the data directly
+// import leaderboardData from '../data/final_leaderboard.json';
+// import historyDataAll from '../data/rating_history_full.json';
 import { slugify } from '../utils/slugify';
 
 export default function Home() {
+  // State for search and UI toggling
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('players');
 
-  const playersArray = Array.isArray(leaderboardData) ? leaderboardData : Object.values(leaderboardData);
-  const filteredPlayers = playersArray.filter(player =>
-    player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // State to hold the data fetched from the JSON files
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [historyDataAll, setHistoryDataAll] = useState([]);
+  const [loading, setLoading] = useState(true); // Loading state
 
+  // useEffect to fetch data when the component mounts
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch both files concurrently
+        const [leaderboardRes, historyRes] = await Promise.all([
+          fetch('/final_leaderboard.json'), // Path is relative to the public folder
+          fetch('/rating_history_full.json')
+        ]);
+
+        const leaderboardJson = await leaderboardRes.json();
+        const historyJson = await historyRes.json();
+
+        setLeaderboardData(leaderboardJson);
+        setHistoryDataAll(historyJson);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        // Optionally, set an error state here
+      } finally {
+        setLoading(false); // Set loading to false once done
+      }
+    }
+
+    fetchData();
+  }, []); // The empty dependency array ensures this runs only once on mount
+
+  // Memoized calculation for filtered players
+  const filteredPlayers = useMemo(() => {
+    const playersArray = Array.isArray(leaderboardData) ? leaderboardData : Object.values(leaderboardData);
+    return playersArray.filter(player =>
+      player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [leaderboardData, searchQuery]); // Re-calculates when data or search query changes
+
+  // Memoized calculation for unique events
   const uniqueEvents = useMemo(() => {
+    if (historyDataAll.length === 0) return []; // Guard against empty data
+    
     const allEventNames = historyDataAll.map(entry => entry.event_name);
     const uniqueNames = [...new Set(allEventNames)].filter(name => name !== "Rating Decay");
 
@@ -36,21 +77,33 @@ export default function Home() {
       if (dateA) return -1;
       return b.localeCompare(a);
     });
-  }, []);
+  }, [historyDataAll]); // Re-calculates when history data changes
 
-  const filteredEvents = uniqueEvents.filter(eventName =>
-    eventName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEvents = useMemo(() => {
+    return uniqueEvents.filter(eventName =>
+      eventName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [uniqueEvents, searchQuery]);
 
+  // Show a loading indicator while fetching data
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <main className={styles.main}>
+          <h1 className={styles.title}>Minecraft Event ELO</h1>
+          <p>Loading leaderboard...</p>
+        </main>
+      </div>
+    );
+  }
+  
   return (
     <div className={styles.container}>
       <Head>
-        {/* MODIFICATION: Changed the browser tab title */}
         <title>Minecraft Event ELO</title>
       </Head>
 
       <main className={styles.main}>
-        {/* MODIFICATION: Changed the main page title */}
         <h1 className={styles.title}>Minecraft Event ELO</h1>
 
         <div className={styles.searchToggle}>
