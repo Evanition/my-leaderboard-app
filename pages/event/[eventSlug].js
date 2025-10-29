@@ -9,7 +9,7 @@ import styles from '../../styles/EventPage.module.css';
 import historyDataAll from '../../public/rating_history_full.json';
 import { slugify } from '../../utils/slugify';
 import EventLogo from '../../components/EventLogo'; // <-- Import the new component
-import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
+import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 
 // The Event Page Component (Client-Side)
 export default function EventPage() {
