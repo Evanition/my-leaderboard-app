@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
 import { slugify } from '../utils/slugify';
 import EventLogo from '../components/EventLogo';
+import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
 
 // We import the data directly. In a CSR pattern, this data is part of the initial JS bundle.
 // The "client-side" part is processing and rendering it after the component mounts.
@@ -117,13 +118,12 @@ export default function Home() {
                     <td>{player.Rank}</td>
                     <td>
                       <div className={styles.playerCell}>
-                        <Image
-                          src={`https://cravatar.eu/avatar/${player.Player_Name}/32`}
+                        <UnoptimizedAvatar
+                          playerName={player.Player_Name} // <-- CHANGE THIS
                           alt={`${player.Player_Name}'s skin`}
                           width={32}
                           height={32}
                           className={styles.playerAvatar}
-                          unoptimized // <-- ADD THIS PROP
                         />
                         <Link href={`/player/${encodeURIComponent(player.Player_Name)}`}>
                           {player.Player_Name}

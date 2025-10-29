@@ -3,7 +3,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Re-enable the default image loader with remotePatterns
   images: {
     remotePatterns: [
       {
@@ -13,29 +12,34 @@ const nextConfig = {
         pathname: '/avatar/**',
       },
     ],
+    unoptimized: true,
   },
   
-  // Configure caching for both logos and the proxied avatars
   async headers() {
     return [
       {
-        // This rule caches your self-hosted logos
+        // This rule is for your self-hosted logos. 'immutable' is SAFE here
+        // because you control these files. They won't change unless you deploy.
         source: '/logos/:all*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=3, immutable',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
       {
-        // This rule caches the images processed by Next.js, including the
-        // unoptimized avatars from cravatar.eu
+        // --- THIS IS THE NEW, SMARTER RULE FOR PLAYER AVATARS ---
         source: '/_next/image',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=3, immutable',
+            // This is a production-grade caching header for proxied content.
+            // s-maxage=86400: The CDN (Vercel) will cache the image for 1 day.
+            // stale-while-revalidate=31536000: If a request comes after 1 day,
+            // the CDN will serve the old (stale) image immediately, and then
+            // re-fetch the fresh one in the background for the next user.
+            value: 'public, s-maxage=86400, stale-while-revalidate=31536000',
           },
         ],
       },

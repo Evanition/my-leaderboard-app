@@ -9,6 +9,7 @@ import styles from '../../styles/EventPage.module.css';
 import historyDataAll from '../../public/rating_history_full.json';
 import { slugify } from '../../utils/slugify';
 import EventLogo from '../../components/EventLogo'; // <-- Import the new component
+import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
 
 // The Event Page Component (Client-Side)
 export default function EventPage() {
@@ -95,13 +96,12 @@ export default function EventPage() {
                   <td>#{player.rank_at_event}</td>
                   <td>
                     <div className={styles.playerCell}>
-                      <Image
-                        src={`https://cravatar.eu/avatar/${player.player_name}/32`}
+                      <UnoptimizedAvatar
+                        playerName={player.player_name} // <-- CHANGE THIS
                         alt={`${player.player_name}'s skin`}
                         width={32}
                         height={32}
                         className={styles.playerAvatar}
-                        unoptimized
                       />
                       <Link href={`/player/${encodeURIComponent(player.player_name)}`}>
                         {player.player_name}
