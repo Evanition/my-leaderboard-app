@@ -12,6 +12,7 @@ const nextConfig = {
         pathname: '/avatar/**',
       },
     ],
+    unoptimized: true,
   },
   // --- ADD THIS NEW SECTION ---
   async headers() {
