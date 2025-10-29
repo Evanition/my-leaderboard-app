@@ -13,6 +13,8 @@ import historyDataAll from '../../public/rating_history_full.json';
 import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
 import EventLogo from '../../components/EventLogo';
+import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
+
 
 // --- DYNAMICALLY IMPORT THE CHART COMPONENT ---
 // This tells Next.js to load the PlayerChart component in a separate JavaScript file.
@@ -109,7 +111,16 @@ export default function PlayerProfile() {
         </Link>
         
         <header className={styles.profileHeader}>
-          <h1 className={styles.playerName}>{playerName}</h1>
+          <div className={styles.profileTitle}>
+            <UnoptimizedAvatar
+              playerName={playerName}
+              alt={`${playerName}'s skin`}
+              width={80}  // A larger size for the header
+              height={80}
+              className={styles.profileAvatar}
+            />
+            <h1 className={styles.playerName}>{playerName}</h1>
+          </div>
           <div className={styles.statsContainer}>
             <div className={styles.statCard}>
               <p className={styles.statValue}>{playerSummary.Rating.toFixed(2)}</p>

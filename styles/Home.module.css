@@ -263,3 +263,33 @@
   -webkit-background-clip: text;
   color: transparent;
 }
+/* Modify the link to be a flex container */
+.eventLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 18px 22px;
+  text-decoration: none;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Style the left side (logo and name) */
+.eventDetails {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  /* Prevent long names from pushing the date away */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Style for the new date element */
+.eventDate {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  flex-shrink: 0; /* Prevents the date from shrinking */
+}
