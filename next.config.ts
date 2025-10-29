@@ -3,19 +3,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
-  // Use the 'images' key to configure Next.js Image Optimization.
   images: {
-    // 'remotePatterns' is an array of objects that define allowed external image sources.
     remotePatterns: [
       {
-        // This pattern specifically targets the cravatar.eu service.
         protocol: 'https',
         hostname: 'cravatar.eu',
-        port: '', // The port is usually empty for standard https.
-        pathname: '/avatar/**', // This is the key part.
+        port: '',
+        pathname: '/avatar/**',
       },
     ],
+  },
+  // --- ADD THIS NEW SECTION ---
+  async headers() {
+    return [
+      {
+        // This targets ALL files inside your /public/logos/ folder
+        source: '/logos/:all*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            // public: allowed to be cached by anyone (browsers, CDNs)
+            // max-age=31536000: cache for 1 year (in seconds)
+            // immutable: promises the file will NEVER change
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
   },
 };
 
