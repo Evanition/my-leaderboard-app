@@ -8,6 +8,7 @@ import { useRouter } from 'next/router'; // Use 'next/router' for the Pages Rout
 import styles from '../../styles/EventPage.module.css';
 import historyDataAll from '../../public/rating_history_full.json';
 import { slugify } from '../../utils/slugify';
+import EventLogo from '../../components/EventLogo'; // <-- Import the new component
 
 // The Event Page Component (Client-Side)
 export default function EventPage() {
@@ -70,11 +71,15 @@ export default function EventPage() {
       </Head>
 
       <main className={styles.main}>
-        <Link href="/" className={styles.backLink}>
-          &larr; Back to Leaderboard
-        </Link>
-        <h1 className={styles.title}>{eventName}</h1>
-        {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
+        {/* --- MODIFICATION START --- */}
+        <div className={styles.eventHeader}>
+          <EventLogo eventName={eventName} size={64} />
+          <div>
+            <h1 className={styles.title}>{eventName}</h1>
+            {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
+          </div>
+        </div>
+        {/* --- MODIFICATION END --- */}
         <div className={styles.tableWrapper}>
           <table className={styles.eventTable}>
             <thead>

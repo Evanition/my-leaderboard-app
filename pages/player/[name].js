@@ -10,6 +10,7 @@ import CustomTooltip from '../../components/CustomTooltip';
 import historyDataAll from '../../public/rating_history_full.json';
 import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
+import EventLogo from '../../components/EventLogo'; // <-- Import the new component
 
 // --- The Player Profile Component (Client-Side) ---
 export default function PlayerProfile() {
@@ -172,7 +173,12 @@ export default function PlayerProfile() {
                   {participatedEvents.map((event, index) => (
                     <li key={index} className={styles.eventItem}>
                       <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink}>
-                        <span className={styles.eventName}>{event.event_name}</span>
+                        {/* --- MODIFICATION START --- */}
+                        <div className={styles.eventNameWrapper}>
+                          <EventLogo eventName={event.event_name} size={24} />
+                          <span className={styles.eventName}>{event.event_name}</span>
+                        </div>
+                        {/* --- MODIFICATION END --- */}
                         <span className={`${styles.eventRank} ${getRankClassName(event.rank_at_event)}`}>
                           #{event.rank_at_event}
                         </span>

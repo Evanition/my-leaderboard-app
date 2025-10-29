@@ -9,6 +9,7 @@ import styles from '../styles/Home.module.css';
 // import leaderboardData from '../data/final_leaderboard.json';
 // import historyDataAll from '../data/rating_history_full.json';
 import { slugify } from '../utils/slugify';
+import EventLogo from '../components/EventLogo';
 
 export default function Home() {
   // State for search and UI toggling
@@ -169,7 +170,10 @@ export default function Home() {
               {filteredEvents.map((eventName) => (
                 <li key={eventName}>
                   <Link href={`/event/${slugify(eventName)}`} className={styles.eventLink}>
-                    {eventName}
+                  <div className={styles.eventItemContent}>
+                    <EventLogo eventName={eventName} />
+                    <span>{eventName}</span>
+                  </div>
                   </Link>
                 </li>
               ))}

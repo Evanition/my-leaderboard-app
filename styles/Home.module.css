@@ -256,3 +256,15 @@
   color: var(--color-text-primary);
   font-weight: 600;
 }
+.leaderboardTable td:last-child {
+  font-weight: 700;
+  background-image: var(--grad-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.eventItemContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Space between logo and text */
+}
