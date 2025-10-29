@@ -1,103 +1,74 @@
-"use client";
+// pages/index.js
 
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useMemo, useEffect } from 'react'; // Import useEffect
+import { useState, useMemo, useEffect } from 'react';
 import styles from '../styles/Home.module.css';
-// We no longer import the data directly
-// import leaderboardData from '../data/final_leaderboard.json';
-// import historyDataAll from '../data/rating_history_full.json';
 import { slugify } from '../utils/slugify';
 import EventLogo from '../components/EventLogo';
 
+// We import the data directly. In a CSR pattern, this data is part of the initial JS bundle.
+// The "client-side" part is processing and rendering it after the component mounts.
+import leaderboardData from '../public/final_leaderboard.json';
+import historyDataAll from '../public/rating_history_full.json';
+
 export default function Home() {
-  // State for search and UI toggling
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('players');
+  const [loading, setLoading] = useState(true);
 
-  // State to hold the data fetched from the JSON files
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [historyDataAll, setHistoryDataAll] = useState([]);
-  const [loading, setLoading] = useState(true); // Loading state
+  // State to hold our processed data
+  const [allPlayers, setAllPlayers] = useState([]);
+  const [uniqueEvents, setUniqueEvents] = useState([]);
 
-  // useEffect to fetch data when the component mounts
   useEffect(() => {
-    async function fetchData() {
-      try {
-        // Fetch both files concurrently
-        const [leaderboardRes, historyRes] = await Promise.all([
-          fetch('/final_leaderboard.json'), // Path is relative to the public folder
-          fetch('/rating_history_full.json')
-        ]);
-
-        const leaderboardJson = await leaderboardRes.json();
-        const historyJson = await historyRes.json();
-
-        setLeaderboardData(leaderboardJson);
-        setHistoryDataAll(historyJson);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        // Optionally, set an error state here
-      } finally {
-        setLoading(false); // Set loading to false once done
-      }
-    }
-
-    fetchData();
-  }, []); // The empty dependency array ensures this runs only once on mount
-
-  // Memoized calculation for filtered players
-  const filteredPlayers = useMemo(() => {
+    // This effect runs once on the client-side after the component mounts.
+    // Here, we process the data that was bundled with the component.
     const playersArray = Array.isArray(leaderboardData) ? leaderboardData : Object.values(leaderboardData);
-    return playersArray.filter(player =>
-      player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [leaderboardData, searchQuery]); // Re-calculates when data or search query changes
+    setAllPlayers(playersArray);
 
-  // Memoized calculation for unique events
-  const uniqueEvents = useMemo(() => {
-    if (historyDataAll.length === 0) return []; // Guard against empty data
-    
     const allEventNames = historyDataAll.map(entry => entry.event_name);
     const uniqueNames = [...new Set(allEventNames)].filter(name => name !== "Rating Decay");
 
     const getDateFromEventName = (eventName) => {
       const dateMatch = eventName.match(/\((\d{1,2}\/\d{1,2}\/\d{4})\)/);
-      if (dateMatch && dateMatch[1]) {
-        return new Date(dateMatch[1]);
-      }
-      return null;
+      return dateMatch && dateMatch[1] ? new Date(dateMatch[1]) : null;
     };
 
-    return uniqueNames.sort((a, b) => {
+    const sortedUniqueNames = uniqueNames.sort((a, b) => {
       const dateA = getDateFromEventName(a);
       const dateB = getDateFromEventName(b);
       if (dateA && dateB) return dateB - dateA;
-      if (dateB) return 1;
-      if (dateA) return -1;
       return b.localeCompare(a);
     });
-  }, [historyDataAll]); // Re-calculates when history data changes
+    setUniqueEvents(sortedUniqueNames);
+    
+    setLoading(false); // Data is ready
+  }, []); // Empty array means this effect runs only once
+
+  const filteredPlayers = useMemo(() => {
+    if (!searchQuery) return allPlayers;
+    return allPlayers.filter(player =>
+      player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allPlayers, searchQuery]);
 
   const filteredEvents = useMemo(() => {
+    if (!searchQuery) return uniqueEvents;
     return uniqueEvents.filter(eventName =>
       eventName.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [uniqueEvents, searchQuery]);
 
-  // Show a loading indicator while fetching data
   if (loading) {
     return (
       <div className={styles.container}>
-        <main className={styles.main}>
-          <h1 className={styles.title}>Minecraft Event ELO</h1>
-          <p>Loading leaderboard...</p>
-        </main>
+        <main className={styles.main}><h1 className={styles.title}>Loading...</h1></main>
       </div>
     );
   }
-  
+
   return (
     <div className={styles.container}>
       <Head>
@@ -170,10 +141,10 @@ export default function Home() {
               {filteredEvents.map((eventName) => (
                 <li key={eventName}>
                   <Link href={`/event/${slugify(eventName)}`} className={styles.eventLink}>
-                  <div className={styles.eventItemContent}>
-                    <EventLogo eventName={eventName} />
-                    <span>{eventName}</span>
-                  </div>
+                    <div className={styles.eventItemContent}>
+                      <EventLogo eventName={eventName} />
+                      <span>{eventName}</span>
+                    </div>
                   </Link>
                 </li>
               ))}

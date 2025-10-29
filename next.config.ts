@@ -1,11 +1,22 @@
-import type { NextConfig } from "next";
+// next.config.js
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    // MODIFICATION: Added the domain for Minecraft skin avatars
-    domains: ['cravatar.eu'],
-  },
-}
 
-module.exports = nextConfig
+  // Use the 'images' key to configure Next.js Image Optimization.
+  images: {
+    // 'remotePatterns' is an array of objects that define allowed external image sources.
+    remotePatterns: [
+      {
+        // This pattern specifically targets the cravatar.eu service.
+        protocol: 'https',
+        hostname: 'cravatar.eu',
+        port: '', // The port is usually empty for standard https.
+        pathname: '/avatar/**', // This is the key part.
+      },
+    ],
+  },
+};
+
+module.exports = nextConfig;

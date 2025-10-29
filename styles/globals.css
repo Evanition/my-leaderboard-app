@@ -1,13 +1,15 @@
 /* styles/globals.css */
 
-/* 1. CSS RESET */
-/* This is the most important part: it removes the default browser margin */
-/* that was causing the white space around your entire site. */
+/* Add a fallback for the main tag we added in _app.js */
+main {
+  font-family: var(--font-sans);
+}
+
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans); /* Use the variable */
 }
 
 a {
@@ -22,7 +24,7 @@ a {
 /* 2. CENTRALIZED THEME VARIABLES (DARK THEME) */
 /* All your colors, gradients, and fonts are defined ONCE here. */
 :root {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   --grad-primary: linear-gradient(90deg, #8a78f0, #f871ab); /* Using the pink/purple gradient as default */
   --grad-background: linear-gradient(135deg, #1f2937 0%, #111827 100%);

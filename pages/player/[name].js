@@ -1,42 +1,46 @@
+// pages/player/[name].js
+
+"use client";
+
 import Head from 'next/head';
 import Link from 'next/link';
 import { useMemo, useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // <-- CORRECT IMPORT FOR PAGES ROUTER
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush
-} from 'recharts';
+import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic'; // Import dynamic
+
 import styles from '../../styles/PlayerProfile.module.css';
-import CustomTooltip from '../../components/CustomTooltip';
 import historyDataAll from '../../public/rating_history_full.json';
 import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
-import EventLogo from '../../components/EventLogo'; // <-- Import the new component
+import EventLogo from '../../components/EventLogo';
 
-// --- The Player Profile Component (Client-Side) ---
+// --- DYNAMICALLY IMPORT THE CHART COMPONENT ---
+// This tells Next.js to load the PlayerChart component in a separate JavaScript file.
+const PlayerChart = dynamic(() => import('../../components/PlayerChart'), {
+  // This content will be shown while the chart component is loading.
+  loading: () => <p style={{ textAlign: 'center', minHeight: '400px' }}>Loading chart...</p>,
+  // This is crucial: it ensures the chart is only ever rendered on the client-side.
+  ssr: false, 
+});
+
 export default function PlayerProfile() {
   const router = useRouter();
-  // We get 'name' from router.query, but it might not be ready on first render.
-  const { name } = router.query; 
+  const { name } = router.query;
 
   const [playerName, setPlayerName] = useState('');
   const [playerSummary, setPlayerSummary] = useState(null);
   const [eventHistory, setEventHistory] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [peakRating, setPeakRating] = useState('0.00');
-  const [loading, setLoading] = useState(true); // Start in a loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Only run the data fetching logic when the router is ready and 'name' is available.
-    if (!router.isReady) {
-      return; 
-    }
+    if (!router.isReady) return;
 
     const decodedName = decodeURIComponent(name);
     setPlayerName(decodedName);
 
-    // --- All the data processing logic is moved inside useEffect ---
     const playerHistoryRaw = Array.isArray(historyDataAll) ? historyDataAll : Object.values(historyDataAll);
-    
     const playerHistoryChronological = playerHistoryRaw
       .filter(entry => entry.player_name === decodedName)
       .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
@@ -48,9 +52,7 @@ export default function PlayerProfile() {
       let peak = 0;
       const calculatedChartData = playerHistoryChronological.map((entry, index) => {
         const rating = parseFloat(entry.rating_after);
-        if (rating > peak) {
-          peak = rating;
-        }
+        if (rating > peak) peak = rating;
         const previousRating = index > 0 ? parseFloat(playerHistoryChronological[index - 1].rating_after) : 1000.00;
         const ratingChange = rating - previousRating;
 
@@ -68,9 +70,8 @@ export default function PlayerProfile() {
       setEventHistory([...playerHistoryChronological].reverse());
     }
     
-    setLoading(false); // Data is processed, stop loading
-
-  }, [router.isReady, name]); // Dependency array ensures this runs when the router is ready
+    setLoading(false);
+  }, [router.isReady, name]);
 
   const processedChartData = useMemo(() => {
     return chartData.map(entry => ({
@@ -88,7 +89,6 @@ export default function PlayerProfile() {
     return '';
   };
 
-  // --- Render Loading and Not Found States ---
   if (loading) {
     return <p>Loading player data...</p>;
   }
@@ -97,7 +97,6 @@ export default function PlayerProfile() {
     return <p>Player not found.</p>;
   }
 
-  // --- Render the main component JSX ---
   return (
     <div className={styles.container}>
       <Head>
@@ -131,37 +130,9 @@ export default function PlayerProfile() {
           <div className={styles.dataCard}>
             <h2 className={styles.sectionTitle}>Rating Progression</h2>
             <div className={styles.chartWrapper}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={processedChartData} margin={{ top: 10, right: 30, left: 0, bottom: 40 }}>
-                  <defs>
-                    <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#8a78f0" />
-                      <stop offset="100%" stopColor="#f871ab" />
-                    </linearGradient>
-                    <linearGradient id="brushGradient" x1="0" y1="0" x2="0" y2="1">
-                       <stop offset="5%" stopColor="#8a78f0" stopOpacity={0.8}/>
-                       <stop offset="95%" stopColor="#f871ab" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(128, 128, 128, 0.2)" />
-                  <XAxis dataKey="date" hide={true} />
-                  <YAxis domain={['dataMin - 100', 'dataMax + 100']} stroke="rgba(128, 128, 128, 0.5)" />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(128, 128, 128, 0.5)', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                  <Line type="monotone" dataKey="rating" stroke="url(#lineGradient)" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 2 }} />
-                  <Brush 
-                    dataKey="date" 
-                    height={40} 
-                    stroke="rgba(138, 120, 240, 0.5)" 
-                    y={350}
-                    fill="url(#brushGradient)"
-                    tickFormatter={(tick) => new Date(tick).toLocaleDateString()}
-                  >
-                    <LineChart>
-                      <Line type="monotone" dataKey="rating" stroke="url(#lineGradient)" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </Brush>
-                </LineChart>
-              </ResponsiveContainer>
+              {/* --- THIS IS THE ONLY CHANGE IN THE JSX --- */}
+              {/* Instead of the big block of chart JSX, we just call our new component */}
+              <PlayerChart chartData={processedChartData} />
             </div>
           </div>
 
@@ -173,12 +144,10 @@ export default function PlayerProfile() {
                   {participatedEvents.map((event, index) => (
                     <li key={index} className={styles.eventItem}>
                       <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink}>
-                        {/* --- MODIFICATION START --- */}
                         <div className={styles.eventNameWrapper}>
                           <EventLogo eventName={event.event_name} size={24} />
                           <span className={styles.eventName}>{event.event_name}</span>
                         </div>
-                        {/* --- MODIFICATION END --- */}
                         <span className={`${styles.eventRank} ${getRankClassName(event.rank_at_event)}`}>
                           #{event.rank_at_event}
                         </span>
