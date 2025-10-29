@@ -12,6 +12,7 @@ const nextConfig = {
         pathname: '/avatar/**',
       },
     ],
+    unoptimized: true,
   },
   async headers() {
     return [
