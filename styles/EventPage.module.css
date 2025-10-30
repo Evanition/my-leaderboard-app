@@ -147,3 +147,23 @@
   text-align: left;
   margin: 0; /* Remove top and bottom margins */
 }
+.subtitleContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Space between date and ELO */
+    margin-top: 0.25rem;
+}
+
+/* Adjust subtitle to remove extra margins */
+.subtitle {
+  text-align: left;
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Style for the average ELO in the header */
+.averageEloSubtitle {
+    font-weight: 600;
+    color: var(--color-text-primary); /* Make it stand out a bit more */
+}

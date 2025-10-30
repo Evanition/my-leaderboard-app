@@ -1,86 +1,101 @@
+// pages/event/[eventSlug].js
+
 "use client";
 
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // Use 'next/router' for the Pages Router
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/router';
 import styles from '../../styles/EventPage.module.css';
 import historyDataAll from '../../public/rating_history_full.json';
 import { slugify } from '../../utils/slugify';
-import EventLogo from '../../components/EventLogo'; // <-- Import the new component
+import { stripDateFromEventName } from '../../utils/formatters';
+import EventLogo from '../../components/EventLogo';
 import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 
-// The Event Page Component (Client-Side)
 export default function EventPage() {
   const router = useRouter();
-  const { eventSlug } = router.query; // Get the slug from the URL
+  const { eventSlug } = router.query;
 
-  // State to hold event data, initialized to empty/loading states
   const [eventName, setEventName] = useState('');
-  const [eventPlayers, setEventPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // We only run the logic if the router is ready and the eventSlug exists
-    if (!router.isReady) {
-      return;
-    }
-
-    // Find the original event name by matching its slugified version
+    if (!router.isReady) return;
     const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
-
-    // If an event is found, process its data
     if (eventEntry) {
-      const originalEventName = eventEntry.event_name;
-      setEventName(originalEventName);
+      setEventName(eventEntry.event_name);
+    }
+    setLoading(false);
+  }, [router.isReady, eventSlug]);
 
-      // Filter the history to get all players from this event and sort them
-      const eventData = historyDataAll
-        .filter(entry => entry.event_name === originalEventName)
-        .sort((a, b) => a.rank_at_event - b.rank_at_event);
-      
-      setEventPlayers(eventData);
+  const eventData = useMemo(() => {
+    if (!eventName) return null;
+
+    const players = historyDataAll
+      .filter(entry => entry.event_name === eventName)
+      .sort((a, b) => a.rank_at_event - b.rank_at_event);
+
+    if (players.length === 0) {
+      return { players, averageRating: 0 };
     }
 
-    // Set loading to false once data processing is complete
-    setLoading(false);
+    // --- THIS IS THE DEFINITIVE FIX ---
+    // We now calculate the total ELO using 'rating_after'. This is the most
+    // reliable number in the dataset and aligns with the homepage's difficulty metric.
+    const totalRating = players.reduce((sum, player) => {
+      // 1. Attempt to parse the rating_after value.
+      const ratingAfter = parseFloat(player.rating_after);
+  console.log(`Player: ${player.player_name}, rating_after:`, player.rating_after, `Type: ${typeof player.rating_after}`);
+      // 2. A simple safety check ensures we only add valid numbers.
+      if (!isNaN(ratingAfter)) {
+        return sum + ratingAfter;
+      }
+      return sum; // If it's not a number, add nothing for this player.
+    }, 0);
 
-  }, [router.isReady, eventSlug]); // Rerun this effect when the router is ready or the slug changes
+    const averageRating = totalRating / players.length;
 
-  // Display a loading message while data is being prepared
+    return { players, averageRating };
+  }, [eventName]);
+
   if (loading) {
     return <p>Loading event data...</p>;
   }
 
-  // Display a not found message if no event name was set after loading
-  if (!eventName) {
+  if (!eventData) {
     return <p>Event not found.</p>;
   }
 
-  // Calculate the event date only when we have the data
-  const eventDate = eventPlayers.length > 0 
-    ? new Date(eventPlayers[0].event_date).toLocaleDateString(undefined, {
+  const eventDate = eventData.players.length > 0
+    ? new Date(eventData.players[0].event_date).toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
-      }) 
+      })
     : '';
 
   return (
     <div className={styles.container}>
       <Head>
-        <title>Results for {eventName}</title>
+        <title>Results for {stripDateFromEventName(eventName)}</title>
       </Head>
-
       <main className={styles.main}>
-        {/* --- MODIFICATION START --- */}
+        <Link href="/" className={styles.backLink}>
+          &larr; Back to Leaderboard
+        </Link>
         <div className={styles.eventHeader}>
-          <EventLogo eventName={eventName} size={64} />
-          <div>
-            <h1 className={styles.title}>{eventName}</h1>
-            {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
-          </div>
+            <EventLogo eventName={eventName} size={64} />
+            <div>
+                <h1 className={styles.title}>{stripDateFromEventName(eventName)}</h1>
+                <div className={styles.subtitleContainer}>
+                    {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
+                    {/* This will now display the correct, calculated average */}
+                    <p className={`${styles.subtitle} ${styles.averageEloSubtitle}`}>
+                      • {eventData.averageRating.toFixed(2)} Avg ELO
+                    </p>
+                </div>
+            </div>
         </div>
-        {/* --- MODIFICATION END --- */}
         <div className={styles.tableWrapper}>
           <table className={styles.eventTable}>
             <thead>
@@ -91,13 +106,13 @@ export default function EventPage() {
               </tr>
             </thead>
             <tbody>
-              {eventPlayers.map((player) => (
+              {eventData.players.map((player) => (
                 <tr key={player.player_name}>
                   <td>#{player.rank_at_event}</td>
                   <td>
                     <div className={styles.playerCell}>
                       <UnoptimizedAvatar
-                        playerName={player.player_name} // <-- CHANGE THIS
+                        playerName={player.player_name}
                         alt={`${player.player_name}'s skin`}
                         width={32}
                         height={32}

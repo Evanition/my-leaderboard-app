@@ -14,7 +14,7 @@ import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
 import EventLogo from '../../components/EventLogo';
 import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
-
+import { stripDateFromEventName } from '../../utils/formatters';
 
 // --- DYNAMICALLY IMPORT THE CHART COMPONENT ---
 // This tells Next.js to load the PlayerChart component in a separate JavaScript file.
@@ -157,7 +157,9 @@ export default function PlayerProfile() {
                       <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink}>
                         <div className={styles.eventNameWrapper}>
                           <EventLogo eventName={event.event_name} size={24} />
-                          <span className={styles.eventName}>{event.event_name}</span>
+                          <span className={styles.eventName}>
+                            {stripDateFromEventName(event.event_name)} {/* <-- USE IT HERE */}
+                          </span>
                         </div>
                         <span className={`${styles.eventRank} ${getRankClassName(event.rank_at_event)}`}>
                           #{event.rank_at_event}

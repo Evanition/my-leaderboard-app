@@ -35,9 +35,6 @@ export function getLogoForEvent(eventName) {
    if (name.includes('cube championships')) {
     return '/logos/cube-championships.png';
   }
-    if (name.includes('fruit wars')) {
-    return '/logos/fruit-wars.png';
-  }
   if (name.includes('pandora\'s box')) {
     return '/logos/pandoras-box.png';
   }

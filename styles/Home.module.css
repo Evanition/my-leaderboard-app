@@ -293,3 +293,88 @@
   font-weight: 500;
   flex-shrink: 0; /* Prevents the date from shrinking */
 }
+
+.eventNameAndDifficulty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+/* Base style for the new difficulty tag */
+.difficultyTag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Color classes for each difficulty tier */
+.tierLegendary { background-image: linear-gradient(45deg, #f59e0b, #facc15); color: #422006; } /* Gold */
+.tierMaster { background-image: linear-gradient(45deg, #ec4899, #f9a8d4); } /* Hot Pink */
+.tierExpert { background-image: linear-gradient(45deg, #9333ea, #a855f7); } /* Purple */
+.tierSkilled { background-image: linear-gradient(45deg, #4f46e5, #6366f1); } /* Indigo */
+.tierAdvanced { background-image: linear-gradient(45deg, #2563eb, #3b82f6); } /* Blue */
+
+/* Mid Tiers (Solid Colors) */
+.tierProficient { background-color: #0d9488; } /* Teal */
+.tierIntermediate { background-color: #16a34a; } /* Green */
+.tierDeveloping { background-color: #65a30d; } /* Lime */
+.tierApprentice { background-color: #0ea5e9; } /* Sky Blue */
+
+/* Low Tiers (Grays) */
+.tierBeginner { background-color: #64748b; } /* Slate */
+.tierNovice { background-color: #4b5563; } /* Gray */
+.tierNoob { background-color: #374151; } /* Dark Gray */
+
+/* Fallback/Unknown Tier */
+.tierUnknown { background-color: #1f2937; border: 1px solid #4b5563; } /* Darkest Gray with border */
+
+.difficultyContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* Space between tag and text */
+}
+
+/* Style for the new average ELO text */
+.averageElo {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap; /* Prevent it from wrapping */
+}
+.sortToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Individual sort buttons */
+.sortButton {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sortButton:hover {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+/* Style for the currently active sort button */
+.sortButtonActive {
+  background: var(--color-glow);
+  color: #fff;
+  border-color: transparent;
+}
