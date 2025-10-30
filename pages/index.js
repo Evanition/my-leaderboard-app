@@ -35,6 +35,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [playerSort, setPlayerSort] = useState('current');
   const [eventSort, setEventSort] = useState('newest');
+  const [playerSortDirection, setPlayerSortDirection] = useState('desc');
+  const [eventSortDirection, setEventSortDirection] = useState('desc');
 
   useEffect(() => {
     async function fetchData() {
@@ -53,6 +55,24 @@ export default function Home() {
     }
     fetchData();
   }, []);
+
+  const handlePlayerSortChange = (newSortType) => {
+    if (playerSort === newSortType) {
+      setPlayerSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setPlayerSort(newSortType);
+      setPlayerSortDirection('desc');
+    }
+  };
+
+  const handleEventSortChange = (newSortType) => {
+    if (eventSort === newSortType) {
+      setEventSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setEventSort(newSortType);
+      setEventSortDirection('desc');
+    }
+  };
 
   const playerDataWithPeak = useMemo(() => {
     if (leaderboardData.length === 0 || historyDataAll.length === 0) return [];
@@ -95,15 +115,12 @@ export default function Home() {
   }, [historyDataAll]);
 
   const uniqueEvents = useMemo(() => {
-    // --- THIS IS THE KEY FIX ---
-    // This guard clause prevents the hook from running until its dependencies are ready.
-    if (historyDataAll.length === 0 || !eventDifficultyMap) {
-      return [];
-    }
+    if (historyDataAll.length === 0 || !eventDifficultyMap) return [];
     
     const uniqueNames = [...new Set(historyDataAll.map(e => e.event_name))];
     
-    return uniqueNames
+    // --- THIS IS THE CORRECTED LOGIC BLOCK ---
+    const processedEvents = uniqueNames
       .filter(name => name && name !== "Rating Decay")
       .map(name => {
         const eventData = eventDifficultyMap.get(name);
@@ -115,32 +132,36 @@ export default function Home() {
           averageRating: eventData?.averageRating || 0,
           sortableDate: extractDateFromEventName(name) ? new Date(extractDateFromEventName(name)) : null,
         };
-      })
-      .sort((a, b) => {
-        if (eventSort === 'difficulty') {
-          return (b.averageRating || 0) - (a.averageRating || 0);
-        }
-        if (a.sortableDate && b.sortableDate) return b.sortableDate - a.sortableDate;
-        if (b.sortableDate) return 1;
-        if (a.sortableDate) return -1;
-        return b.name.localeCompare(a.name);
       });
-  }, [historyDataAll, eventDifficultyMap, eventSort]);
+
+    const sortMultiplier = eventSortDirection === 'desc' ? 1 : -1;
+    return processedEvents.sort((a, b) => {
+      if (eventSort === 'difficulty') {
+        return ((b.averageRating || 0) - (a.averageRating || 0)) * sortMultiplier;
+      }
+      if (a.sortableDate && b.sortableDate) {
+        return (b.sortableDate - a.sortableDate) * sortMultiplier;
+      }
+      if (b.sortableDate) return 1;
+      if (a.sortableDate) return -1;
+      return b.name.localeCompare(a.name) * sortMultiplier;
+    });
+  }, [historyDataAll, eventDifficultyMap, eventSort, eventSortDirection]);
 
   const filteredPlayers = useMemo(() => {
+    const sortMultiplier = playerSortDirection === 'desc' ? 1 : -1;
     const sortedPlayers = [...playerDataWithPeak].sort((a, b) => {
       if (playerSort === 'peak') {
-        return b.peakRating - a.peakRating;
+        return (b.peakRating - a.peakRating) * sortMultiplier;
       }
-      return a.Rank - b.Rank;
+      return (b.Rating - a.Rating) * sortMultiplier;
     });
     return sortedPlayers.filter(player =>
       player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [playerDataWithPeak, searchQuery, playerSort]);
+  }, [playerDataWithPeak, searchQuery, playerSort, playerSortDirection]);
 
   const filteredEvents = useMemo(() => {
-    // This hook will now work correctly because uniqueEvents is guaranteed to be a valid array.
     return uniqueEvents.filter(event =>
       event.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -171,8 +192,14 @@ export default function Home() {
           <>
             <div className={styles.sortToggle}>
               <span>Sort by:</span>
-              <button className={`${styles.sortButton} ${playerSort === 'current' ? styles.sortButtonActive : ''}`} onClick={() => setPlayerSort('current')}>Current Rating</button>
-              <button className={`${styles.sortButton} ${playerSort === 'peak' ? styles.sortButtonActive : ''}`} onClick={() => setPlayerSort('peak')}>Peak Rating</button>
+              <button className={`${styles.sortButton} ${playerSort === 'current' ? styles.sortButtonActive : ''}`} onClick={() => handlePlayerSortChange('current')}>
+                Current Rating
+                {playerSort === 'current' && <span className={styles.sortArrow}>{playerSortDirection === 'desc' ? '↓' : '↑'}</span>}
+              </button>
+              <button className={`${styles.sortButton} ${playerSort === 'peak' ? styles.sortButtonActive : ''}`} onClick={() => handlePlayerSortChange('peak')}>
+                Peak Rating
+                {playerSort === 'peak' && <span className={styles.sortArrow}>{playerSortDirection === 'desc' ? '↓' : '↑'}</span>}
+              </button>
             </div>
             <div className={styles.tableWrapper}>
               <table className={styles.leaderboardTable}>
@@ -210,8 +237,14 @@ export default function Home() {
           <>
             <div className={styles.sortToggle}>
               <span>Sort by:</span>
-              <button className={`${styles.sortButton} ${eventSort === 'newest' ? styles.sortButtonActive : ''}`} onClick={() => setEventSort('newest')}>Newest</button>
-              <button className={`${styles.sortButton} ${eventSort === 'difficulty' ? styles.sortButtonActive : ''}`} onClick={() => setEventSort('difficulty')}>Highest Difficulty</button>
+              <button className={`${styles.sortButton} ${eventSort === 'newest' ? styles.sortButtonActive : ''}`} onClick={() => handleEventSortChange('newest')}>
+                Newest
+                {eventSort === 'newest' && <span className={styles.sortArrow}>{eventSortDirection === 'desc' ? '↓' : '↑'}</span>}
+              </button>
+              <button className={`${styles.sortButton} ${eventSort === 'difficulty' ? styles.sortButtonActive : ''}`} onClick={() => handleEventSortChange('difficulty')}>
+                Highest Difficulty
+                {eventSort === 'difficulty' && <span className={styles.sortArrow}>{eventSortDirection === 'desc' ? '↓' : '↑'}</span>}
+              </button>
             </div>
             <div className={styles.tableWrapper}>
               <ul className={styles.eventList}>
