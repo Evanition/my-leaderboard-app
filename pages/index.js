@@ -241,7 +241,7 @@ export default function Home({ initialPlayers, initialEvents }) {
                     const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                     return (
                       <tr key={player.Player_Name}>
-                        <td>{rank}</td>
+                        <td>{player.Rank}</td>
                         <td>
                           <div className={styles.playerCell}>
                             <UnoptimizedAvatar playerName={player.Player_Name} alt={`${player.Player_Name}'s skin`} width={32} height={32} className={styles.playerAvatar} />
