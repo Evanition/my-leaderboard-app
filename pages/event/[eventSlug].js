@@ -52,7 +52,6 @@ export async function getStaticProps({ params }) {
       eventPlayers,
       averageRating: averageRating.toFixed(2),
     },
-    revalidate: 3600,
   };
 }
 // The component now receives all its data as props.

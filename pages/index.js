@@ -103,7 +103,6 @@ export async function getStaticProps() {
       initialPlayers: allPlayersWithPeak.slice(0, ITEMS_PER_PAGE),
       initialEvents,
     },
-    revalidate: 3600,
   };
 }
 

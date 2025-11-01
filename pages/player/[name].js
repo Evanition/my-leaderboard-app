@@ -72,7 +72,6 @@ export async function getStaticProps({ params }) {
       chartData,
       peakRating: peakRating.toFixed(2),
     },
-    revalidate: 3600, // Re-generate the page at most once per hour
   };
 }
 
