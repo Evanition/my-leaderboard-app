@@ -134,7 +134,9 @@
 }
 
 .chartWrapper {
-  height: 400px;
+  width: 100%; /* Explicitly set the width */
+  height: 400px; /* Keep your existing height */
+  position: relative; /* This is often crucial for responsive containers */
 }
 
 .matchHistoryContainer {

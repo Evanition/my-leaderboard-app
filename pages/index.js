@@ -13,68 +13,110 @@ import { extractDateFromEventName, stripDateFromEventName } from '../utils/forma
 import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
 import EventLogo from '../components/EventLogo';
 
-// --- THIS FUNCTION RUNS ON THE SERVER AT BUILD TIME ---
-// It pre-fetches data, allowing the page to be pre-rendered as static HTML.
-export async function getStaticProps() {
-  const publicDirectory = path.join(process.cwd(), 'public');
-  
-  const leaderboardContent = fs.readFileSync(path.join(publicDirectory, 'final_leaderboard.json'), 'utf8');
-  const historyContent = fs.readFileSync(path.join(publicDirectory, 'rating_history_full.json'), 'utf8');
+// This helper function needs to be outside the component to be used in getStaticProps
+const getDifficultyTier = (avgRating) => {
+  if (!avgRating) return { tier: 'Unknown', className: 'tierUnknown' }; // Use strings for class names
+  if (avgRating >= 1600) return { tier: 'Legendary', className: 'tierLegendary' };
+  if (avgRating >= 1500) return { tier: 'Master', className: 'tierMaster' };
+  if (avgRating >= 1400) return { tier: 'Expert', className: 'tierExpert' };
+  if (avgRating >= 1300) return { tier: 'Skilled', className: 'tierSkilled' };
+  if (avgRating >= 1200) return { tier: 'Advanced', className: 'tierAdvanced' };
+  if (avgRating >= 1100) return { tier: 'Proficient', className: 'tierProficient' };
+  if (avgRating >= 1000) return { tier: 'Intermediate', className: 'tierIntermediate' };
+  if (avgRating >= 900) return { tier: 'Developing', className: 'tierDeveloping' };
+  if (avgRating >= 800) return { tier: 'Apprentice', className: 'tierApprentice' };
+  if (avgRating >= 700) return { tier: 'Beginner', className: 'tierBeginner' };
+  if (avgRating >= 600) return { tier: 'Novice', className: 'tierNovice' };
+  return { tier: 'Noob', className: 'tierNoob' };
+};
 
-  const leaderboardData = JSON.parse(leaderboardContent);
-  const historyDataAll = JSON.parse(historyContent);
+// --- THIS FUNCTION RUNS ON THE SERVER AT BUILD TIME ---
+export async function getStaticProps() {
+  console.log('Running getStaticProps: Pre-calculating all data for the home page...');
+  const publicDirectory = path.join(process.cwd(), 'public');
+  const leaderboardData = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'final_leaderboard.json'), 'utf8'));
+  const historyDataAll = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'rating_history_full.json'), 'utf8'));
+
+  // --- 1. PRE-CALCULATE PEAK RATINGS ---
+  const peakRatings = new Map();
+  for (const entry of historyDataAll) {
+    const rating = parseFloat(entry.rating_after);
+    if (isNaN(rating)) continue;
+    const currentPeak = peakRatings.get(entry.player_name) || 0;
+    if (rating > currentPeak) {
+      peakRatings.set(entry.player_name, rating);
+    }
+  }
+  const initialPlayers = leaderboardData.map(player => ({
+    ...player,
+    peakRating: peakRatings.get(player.Player_Name) || player.Rating,
+  }));
+
+  // --- 2. PRE-CALCULATE EVENT DIFFICULTIES ---
+  const eventDifficultyMap = new Map();
+  for (const entry of historyDataAll) {
+    if (!entry.event_name || entry.event_name === "Rating Decay") continue;
+    if (!eventDifficultyMap.has(entry.event_name)) {
+      eventDifficultyMap.set(entry.event_name, { totalRating: 0, playerCount: 0 });
+    }
+    const eventData = eventDifficultyMap.get(entry.event_name);
+    const rating = parseFloat(entry.rating_after);
+    if (!isNaN(rating)) {
+      eventData.totalRating += rating;
+      eventData.playerCount += 1;
+    }
+  }
+  for (const [eventName, data] of eventDifficultyMap.entries()) {
+    const avgRating = data.playerCount > 0 ? data.totalRating / data.playerCount : 0;
+    data.averageRating = avgRating;
+    const difficulty = getDifficultyTier(avgRating);
+    data.difficultyTier = difficulty.tier;
+    data.difficultyClassName = difficulty.className;
+  }
+  const uniqueNames = [...new Set(historyDataAll.map(e => e.event_name))];
+  const initialEvents = uniqueNames
+    .filter(name => name && name !== "Rating Decay")
+    .map(name => {
+      const eventData = eventDifficultyMap.get(name);
+      return {
+        name,
+        cleanedName: stripDateFromEventName(name),
+        date: extractDateFromEventName(name),
+        difficulty: {
+            tier: eventData?.difficultyTier || 'Unknown',
+            className: eventData?.difficultyClassName || 'tierUnknown'
+        },
+        averageRating: eventData?.averageRating || 0,
+        sortableDate: extractDateFromEventName(name) ? new Date(extractDateFromEventName(name)).toISOString() : null,
+      };
+    });
 
   return {
     props: {
-      initialLeaderboardData: leaderboardData,
-      initialHistoryDataAll: historyDataAll,
+      initialPlayers,
+      initialEvents,
     },
-    // Re-build the page at most once per hour to keep data fresh.
-    revalidate: 3600, 
+    revalidate: 3600,
   };
 }
 
-const getDifficultyTier = (avgRating) => {
-  if (!avgRating) return { tier: 'Unknown', className: styles.tierUnknown };
-  if (avgRating >= 1600) return { tier: 'Legendary', className: styles.tierLegendary };
-  if (avgRating >= 1500) return { tier: 'Master', className: styles.tierMaster };
-  if (avgRating >= 1400) return { tier: 'Expert', className: styles.tierExpert };
-  if (avgRating >= 1300) return { tier: 'Skilled', className: styles.tierSkilled };
-  if (avgRating >= 1200) return { tier: 'Advanced', className: styles.tierAdvanced };
-  if (avgRating >= 1100) return { tier: 'Proficient', className: styles.tierProficient };
-  if (avgRating >= 1000) return { tier: 'Intermediate', className: styles.tierIntermediate };
-  if (avgRating >= 900) return { tier: 'Developing', className: styles.tierDeveloping };
-  if (avgRating >= 800) return { tier: 'Apprentice', className: styles.tierApprentice };
-  if (avgRating >= 700) return { tier: 'Beginner', className: styles.tierBeginner };
-  if (avgRating >= 600) return { tier: 'Novice', className: styles.tierNovice };
-  return { tier: 'Noob', className: styles.tierNoob };
-};
-
 const ITEMS_PER_PAGE = 100;
 
-export default function Home({ initialLeaderboardData, initialHistoryDataAll }) {
+export default function Home({ initialPlayers, initialEvents }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('players');
-  
-  // Initialize state with the pre-fetched data from getStaticProps.
-  const [leaderboardData, setLeaderboardData] = useState(initialLeaderboardData);
-  const [historyDataAll, setHistoryDataAll] = useState(initialHistoryDataAll);
-  
-  // The page is not in a loading state on initial load.
-  const [loading, setLoading] = useState(false);
-
+  const [playerData, setPlayerData] = useState(initialPlayers);
+  const [eventData, setEventData] = useState(initialEvents);
   const [playerSort, setPlayerSort] = useState('current');
   const [eventSort, setEventSort] = useState('newest');
   const [playerSortDirection, setPlayerSortDirection] = useState('desc');
   const [eventSortDirection, setEventSortDirection] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset to page 1 whenever the user changes search or sort filters.
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, playerSort, playerSortDirection]);
 
-  // Handlers for toggling sort type and direction.
   const handlePlayerSortChange = (newSortType) => {
     if (playerSort === newSortType) {
       setPlayerSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -93,30 +135,10 @@ export default function Home({ initialLeaderboardData, initialHistoryDataAll }) 
     }
   };
 
-  const playerDataWithPeak = useMemo(() => {
-    if (!leaderboardData || leaderboardData.length === 0 || historyDataAll.length === 0) return [];
-    const peakRatings = new Map();
-    for (const entry of historyDataAll) {
-      const rating = parseFloat(entry.rating_after);
-      if (isNaN(rating)) continue;
-      const currentPeak = peakRatings.get(entry.player_name) || 0;
-      if (rating > currentPeak) {
-        peakRatings.set(entry.player_name, rating);
-      }
-    }
-    return leaderboardData.map(player => ({
-      ...player,
-      peakRating: peakRatings.get(player.Player_Name) || player.Rating,
-    }));
-  }, [leaderboardData, historyDataAll]);
-
-  const eventDifficultyMap = useMemo(() => { /* ... unchanged ... */ }, [historyDataAll]);
-  const uniqueEvents = useMemo(() => { /* ... unchanged ... */ }, [historyDataAll, eventDifficultyMap, eventSort, eventSortDirection]);
-
   const filteredPlayers = useMemo(() => {
-    if (!playerDataWithPeak || playerDataWithPeak.length === 0) return [];
+    if (!playerData) return [];
     const sortMultiplier = playerSortDirection === 'desc' ? 1 : -1;
-    const sortedPlayers = [...playerDataWithPeak].sort((a, b) => {
+    const sortedPlayers = [...playerData].sort((a, b) => {
       if (playerSort === 'peak') {
         return (b.peakRating - a.peakRating) * sortMultiplier;
       }
@@ -125,26 +147,37 @@ export default function Home({ initialLeaderboardData, initialHistoryDataAll }) 
     return sortedPlayers.filter(player =>
       player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [playerDataWithPeak, searchQuery, playerSort, playerSortDirection]);
-  
+  }, [playerData, searchQuery, playerSort, playerSortDirection]);
+
+  const sortedEvents = useMemo(() => {
+    if (!eventData) return [];
+    const sortMultiplier = eventSortDirection === 'desc' ? 1 : -1;
+    return [...eventData].sort((a, b) => {
+      if (eventSort === 'difficulty') {
+        return ((b.averageRating || 0) - (a.averageRating || 0)) * sortMultiplier;
+      }
+      const dateA = a.sortableDate ? new Date(a.sortableDate) : null;
+      const dateB = b.sortableDate ? new Date(b.sortableDate) : null;
+      if (dateA && dateB) {
+        return (dateB - dateA) * sortMultiplier;
+      }
+      if (dateB) return 1;
+      if (dateA) return -1;
+      return b.name.localeCompare(a.name) * sortMultiplier;
+    });
+  }, [eventData, eventSort, eventSortDirection]);
+
   const paginatedPlayers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredPlayers.slice(startIndex, endIndex);
+    return filteredPlayers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredPlayers, currentPage]);
 
   const totalPages = Math.ceil(filteredPlayers.length / ITEMS_PER_PAGE);
-  const filteredEvents = useMemo(() => { /* ... unchanged ... */ }, [uniqueEvents, searchQuery]);
-
-  // This check is now mostly a fallback.
-  if (loading) {
-    return (
-      <main className={styles.main}>
-        <h1 className={styles.title}>Minecraft Event ELO</h1>
-        <p>Loading data...</p>
-      </main>
+  const filteredEvents = useMemo(() => {
+    return sortedEvents.filter(event =>
+      event.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }
+  }, [sortedEvents, searchQuery]);
 
   return (
     <div className={styles.container}>
@@ -158,7 +191,6 @@ export default function Home({ initialLeaderboardData, initialHistoryDataAll }) 
           <button className={`${styles.toggleButton} ${searchMode === 'events' ? styles.toggleButtonActive : ''}`} onClick={() => setSearchMode('events')}>Events</button>
         </div>
         <input type="text" placeholder={searchMode === 'players' ? 'Search players...' : 'Search events...'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className={styles.searchInput} />
-        
         {searchMode === 'players' ? (
           <>
             <div className={styles.sortToggle}>
@@ -189,15 +221,7 @@ export default function Home({ initialLeaderboardData, initialHistoryDataAll }) 
                         <td>{rank}</td>
                         <td>
                           <div className={styles.playerCell}>
-                            <UnoptimizedAvatar
-                              playerName={player.Player_Name}
-                              alt={`${player.Player_Name}'s skin`}
-                              width={32}
-                              height={32}
-                              className={styles.playerAvatar}
-                              // Prioritize the first 5 images on the first page for LCP.
-                              priority={index < 5 && currentPage === 1}
-                            />
+                            <UnoptimizedAvatar playerName={player.Player_Name} alt={`${player.Player_Name}'s skin`} width={32} height={32} className={styles.playerAvatar} />
                             <Link href={`/player/${encodeURIComponent(player.Player_Name)}`}>
                               {player.Player_Name}
                             </Link>
@@ -251,7 +275,7 @@ export default function Home({ initialLeaderboardData, initialHistoryDataAll }) 
                         <div className={styles.eventNameAndDifficulty}>
                           <span>{event.cleanedName}</span>
                           <div className={styles.difficultyContainer}>
-                            <span className={`${styles.difficultyTag} ${event.difficulty.className}`}>
+                            <span className={`${styles.difficultyTag} ${styles[event.difficulty.className]}`}>
                               {event.difficulty.tier}
                             </span>
                             <span className={styles.averageElo}>
