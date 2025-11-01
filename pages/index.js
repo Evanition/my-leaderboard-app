@@ -174,6 +174,7 @@ export default function Home({ initialPlayers, initialEvents }) {
 
   const totalPages = Math.ceil(filteredPlayers.length / ITEMS_PER_PAGE);
   const filteredEvents = useMemo(() => {
+    // It should filter from 'sortedEvents', not a non-existent variable.
     return sortedEvents.filter(event =>
       event.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
