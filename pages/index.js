@@ -291,7 +291,7 @@ export default function Home({ initialPlayers, initialEvents }) {
               <ul className={styles.eventList}>
                 {filteredEvents.map((event) => (
                   <li key={event.name}>
-                    <Link href={`/event/${slugify(event.name)}`} className={styles.eventLink}>
+                    <Link href={`/event/${slugify(event.name)}`} className={styles.eventLink} prefetch={false}>
                       <div className={styles.eventDetails}>
                         <EventLogo eventName={event.name} />
                         <div className={styles.eventNameAndDifficulty}>
