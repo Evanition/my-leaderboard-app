@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from '../../styles/EventPage.module.css';
 import { slugify } from '../../utils/slugify';
-import { loadData } from '../../lib/data'; // <-- Import the new loader
-import { stripDateFromEventName } from '../../utils/formatters';
+import { loadData, getLogoForEvent } from '../../lib/data';
+import { stripDateFromEventName} from '../../utils/formatters';
 import EventLogo from '../../components/EventLogo';
 import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 
@@ -35,6 +35,7 @@ export async function getStaticProps({ params }) {
 
   const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
   const originalEventName = eventEntry.event_name;
+  const faviconPath = getLogoForEvent(originalEventName);
 
   const eventPlayers = historyDataAll
     .filter(entry => entry.event_name === originalEventName)
@@ -50,12 +51,13 @@ export async function getStaticProps({ params }) {
     props: {
       eventName: originalEventName,
       eventPlayers,
-      averageRating: averageRating.toFixed(2),
+      averageRating: averageRating.toFixed(0),
+      faviconPath, // <-- 3. Pass the logo path as a prop
     },
   };
 }
 // The component now receives all its data as props.
-export default function EventPage({ eventName, eventPlayers, averageRating }) {
+export default function EventPage({ eventName, eventPlayers, averageRating, faviconPath }) {
   const eventDate = eventPlayers.length > 0
     ? new Date(eventPlayers[0].event_date).toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
@@ -65,7 +67,9 @@ export default function EventPage({ eventName, eventPlayers, averageRating }) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Results for {stripDateFromEventName(eventName)}</title>
+        <title>{stripDateFromEventName(eventName)} Results</title>
+        {/* The correct path is now baked into the static HTML */}
+        <link rel="icon" href={faviconPath} />
       </Head>
       <main className={styles.main}>
         <Link href="/" className={styles.backLink}>
@@ -110,7 +114,7 @@ export default function EventPage({ eventName, eventPlayers, averageRating }) {
                       </Link>
                     </div>
                   </td>
-                  <td>{parseFloat(player.rating_after).toFixed(2)}</td>
+                  <td>{parseFloat(player.rating_after).toFixed(0)}</td>
                 </tr>
               ))}
             </tbody>

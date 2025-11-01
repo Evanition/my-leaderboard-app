@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import styles from '../../styles/PlayerProfile.module.css';
 import { slugify } from '../../utils/slugify';
-import { stripDateFromEventName } from '../../utils/formatters';
+import { stripDateFromEventName, getLogoForEvent } from '../../utils/formatters';
 import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 import EventLogo from '../../components/EventLogo';
 import PlayerChart from '../../components/PlayerChart'; // Assuming your chart is in this component
@@ -56,7 +56,7 @@ export async function getStaticProps({ params }) {
       date: new Date(entry.event_date).toISOString(),
       rating: rating,
       event: entry.event_name,
-      change: ratingChange.toFixed(2),
+      change: ratingChange.toFixed(0),
       rank: entry.rank_at_event || null,
     };
   });
@@ -70,7 +70,7 @@ export async function getStaticProps({ params }) {
       playerSummary,
       eventHistory: eventHistoryForList,
       chartData,
-      peakRating: peakRating.toFixed(2),
+      peakRating: peakRating.toFixed(0),
     },
   };
 }
@@ -102,6 +102,8 @@ export default function PlayerProfile({ playerName, playerSummary, eventHistory,
     <div className={styles.container}>
       <Head>
         <title>{playerName}'s Profile</title>
+        {/* This dynamically sets the browser tab icon to the player's avatar */}
+        <link rel="icon" href={`/avatars/${playerName}.png`} />
       </Head>
       <main className={styles.main}>
         <Link href="/" className={styles.backLink}>
@@ -114,7 +116,7 @@ export default function PlayerProfile({ playerName, playerSummary, eventHistory,
           </div>
           <div className={styles.statsContainer}>
             <div className={styles.statCard}>
-              <p className={styles.statValue}>{playerSummary.Rating.toFixed(2)}</p>
+              <p className={styles.statValue}>{playerSummary.Rating.toFixed(0)}</p>
               <p className={styles.statLabel}>Current Rating</p>
             </div>
             <div className={styles.statCard}>

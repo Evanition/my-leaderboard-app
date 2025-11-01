@@ -20,7 +20,7 @@ export default function MatchHistoryTable({ matches }) {
                 {matches.map((match, index) => {
                     const isWin = match.result === 'WON';
                     const change = parseFloat(match.rating_change);
-                    const changeText = change >= 0 ? `+${change.toFixed(2)}` : change.toFixed(2);
+                    const changeText = change >= 0 ? `+${change.toFixed(0)}` : change.toFixed(0);
                     const resultStyle = { color: isWin ? 'green' : 'red', fontWeight: 'bold' };
 
                     return (

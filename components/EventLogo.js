@@ -1,15 +1,28 @@
 // components/EventLogo.js
 
 import Image from 'next/image';
-// Import the new function instead of the old map
-import { getLogoForEvent } from '../data/logoMatcher'; 
-import styles from './EventLogo.module.css';
+// --- THIS IS THE KEY FIX ---
+// This component runs on the client, so it can't use the server-only `lib/data.js`.
+// We need to re-create the function here or move it to a shared file.
+// For simplicity and since it's only used here on the client, let's define it locally.
 
 /**
- * A reusable component that displays the correct logo for any given event name.
+ * Finds the correct logo path for a given event name.
+ * @param {string} eventName - The full name of the event.
+ * @returns {string} The path to the correct logo image.
  */
+function getLogoForEvent(eventName) {
+  if (!eventName) return '/logos/default-event.png';
+  const name = eventName.toLowerCase();
+  if (name.includes('twitch rivals')) return '/logos/twitch-rivals.png';
+  if (name.includes('block wars')) return '/logos/block-wars.png';
+  if (name.includes('minecraft championship')) return '/logos/minecraft-championship.png';
+  return '/logos/default-event.png';
+}
+
+import styles from './EventLogo.module.css';
+
 const EventLogo = ({ eventName, size = 32 }) => {
-  // The core logic is now simpler: just call the function to get the logo source.
   const logoSrc = getLogoForEvent(eventName);
 
   return (
@@ -20,11 +33,7 @@ const EventLogo = ({ eventName, size = 32 }) => {
         width={size}
         height={size}
         className={styles.eventLogo}
-        // This is a safety net. If a logo file is missing but a rule for it
-        // exists, this will prevent a broken image icon from showing.
-        onError={(e) => {
-          e.currentTarget.src = '/logos/default-event.png';
-        }}
+        onError={(e) => { e.currentTarget.src = '/logos/default-event.png'; }}
       />
     </div>
   );

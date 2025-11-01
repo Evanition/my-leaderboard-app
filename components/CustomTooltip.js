@@ -19,14 +19,14 @@ const TrophyIcon = () => (
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const rating = parseFloat(data.rating).toFixed(2);
+    const rating = parseFloat(data.rating).toFixed(0);
     const eventName = data.event;
     const change = parseFloat(data.change);
     const rank = data.rank; // Get rank from data
     const isPositive = change >= 0;
 
     const changeColor = isPositive ? '#10b981' : '#f43f5e';
-    const changeText = isPositive ? `+${change.toFixed(2)}` : change.toFixed(2);
+    const changeText = isPositive ? `+${change.toFixed(0)}` : change.toFixed(0);
 
     return (
       <div className={styles.customTooltip}>

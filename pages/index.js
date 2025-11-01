@@ -204,6 +204,8 @@ export default function Home({ initialPlayers, initialEvents }) {
     <div className={styles.container}>
       <Head>
         <title>Minecraft Event ELO</title>
+        {/* This sets the browser tab icon for the homepage */}
+        <link rel="icon" href="/logos/default-event.png" />
       </Head>
       <main className={styles.main}>
         <h1 className={styles.title}>Minecraft Event ELO</h1>
@@ -250,8 +252,8 @@ export default function Home({ initialPlayers, initialEvents }) {
                         </td>
                         <td>
                           {playerSort === 'peak'
-                            ? parseFloat(player.peakRating).toFixed(2)
-                            : parseFloat(player.Rating).toFixed(2)}
+                            ? parseFloat(player.peakRating).toFixed(0)
+                            : parseFloat(player.Rating).toFixed(0)}
                         </td>
                       </tr>
                     );
@@ -300,7 +302,7 @@ export default function Home({ initialPlayers, initialEvents }) {
                               {event.difficulty.tier}
                             </span>
                             <span className={styles.averageElo}>
-                              {event.averageRating.toFixed(2)} Avg ELO
+                              {event.averageRating.toFixed(0)} Avg ELO
                             </span>
                           </div>
                         </div>
