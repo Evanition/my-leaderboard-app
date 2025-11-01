@@ -7,39 +7,45 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cravatar.eu',
+        hostname: 'cravatar.eu', // Or 'mc-heads.net' if you switched
         port: '',
         pathname: '/avatar/**',
       },
+      // If you switched to mc-heads.net, the pattern would be:
+      // {
+      //   protocol: 'https',
+      //   hostname: 'mc-heads.net',
+      //   port: '',
+      //   pathname: '/avatar/**',
+      // }
     ],
-    unoptimized: true,
+    unoptimized: true
   },
   
   async headers() {
+    // 2592000 seconds = 30 days
+    const aMonthInSeconds = '2592000';
+
     return [
       {
-        // This rule is for your self-hosted logos. 'immutable' is SAFE here
-        // because you control these files. They won't change unless you deploy.
+        // This rule caches your self-hosted logos for one month.
         source: '/logos/:all*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: `public, max-age=${aMonthInSeconds}, immutable`,
           },
         ],
       },
       {
-        // --- THIS IS THE NEW, SMARTER RULE FOR PLAYER AVATARS ---
+        // This rule caches the proxied player avatars for one month.
         source: '/_next/image',
         headers: [
           {
             key: 'Cache-Control',
-            // This is a production-grade caching header for proxied content.
-            // s-maxage=86400: The CDN (Vercel) will cache the image for 1 day.
-            // stale-while-revalidate=31536000: If a request comes after 1 day,
-            // the CDN will serve the old (stale) image immediately, and then
-            // re-fetch the fresh one in the background for the next user.
-            value: 'public, s-maxage=86400, stale-while-revalidate=31536000',
+            // s-maxage tells the CDN (Vercel) to cache for 1 month.
+            // stale-while-revalidate ensures the site stays fast even when refreshing cache.
+            value: `public, s-maxage=${aMonthInSeconds}, stale-while-revalidate=31536000`,
           },
         ],
       },

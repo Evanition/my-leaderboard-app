@@ -378,3 +378,40 @@
   color: #fff;
   border-color: transparent;
 }
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  width: 100%;
+}
+
+/* Style for Next/Previous buttons */
+.paginationButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: var(--color-glow);
+  border-color: transparent;
+}
+
+/* Style for disabled buttons */
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Style for the "Page X of Y" text */
+.paginationInfo {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}

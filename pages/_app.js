@@ -1,20 +1,18 @@
 // pages/_app.js
 
 import '../styles/globals.css';
-import { Inter } from 'next/font/google'; // 1. Import the font module
+import { Inter } from 'next/font/google'; // Or any other font from next/font
 
-// 2. Configure the font.
-//    'subsets' reduces the font file size to only include necessary characters.
-//    'variable' tells the module to create a CSS variable we can use.
+// Configure the font object
 const inter = Inter({
   subsets: ['latin'],
-  display: 'swap', // Ensures text is visible while the font loads
-  variable: '--font-inter', // This will be our new CSS variable
+  display: 'swap', // This is important for performance
+  variable: '--font-inter', // This will be the CSS variable name
 });
 
 function MyApp({ Component, pageProps }) {
-  // 3. Apply the font variable to the entire application.
-  //    The `inter.variable` class makes the CSS variable available globally.
+  // Apply the font's CSS variable to the entire application
+  // by wrapping everything in a main tag with the className.
   return (
     <main className={inter.variable}>
       <Component {...pageProps} />
