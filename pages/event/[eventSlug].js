@@ -1,75 +1,64 @@
 // pages/event/[eventSlug].js
 
-"use client";
-
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/router';
 import styles from '../../styles/EventPage.module.css';
-import historyDataAll from '../../public/rating_history_full.json';
 import { slugify } from '../../utils/slugify';
+import { loadData } from '../../lib/data'; // <-- Import the new loader
 import { stripDateFromEventName } from '../../utils/formatters';
 import EventLogo from '../../components/EventLogo';
 import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 
-export default function EventPage() {
-  const router = useRouter();
-  const { eventSlug } = router.query;
+// --- THIS FUNCTION RUNS AT BUILD TIME ON THE SERVER ---
+// It tells Next.js which event pages to generate.
+export async function getStaticPaths() {
+  // --- MODIFICATION: Use the cached loader ---
+  const { historyDataAll } = loadData();
+  const allEventNames = historyDataAll.map(entry => entry.event_name);
+  const uniqueEventNames = [...new Set(allEventNames)].filter(name => name && name !== "Rating Decay");
+  const paths = uniqueEventNames.map(name => ({
+    params: { eventSlug: slugify(name) },
+  }));
+  return { paths, fallback: false };
+}
 
-  const [eventName, setEventName] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!router.isReady) return;
-    const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
-    if (eventEntry) {
-      setEventName(eventEntry.event_name);
-    }
-    setLoading(false);
-  }, [router.isReady, eventSlug]);
+// --- THIS FUNCTION RUNS AT BUILD TIME FOR EACH EVENT ---
+// It fetches and processes the data for a single event page.
+export async function getStaticProps({ params }) {
+  const { eventSlug } = params;
+  
+  // --- MODIFICATION: Use the cached loader ---
+  const { historyDataAll } = loadData();
+  const fs = require('fs');
 
-  const eventData = useMemo(() => {
-    if (!eventName) return null;
+  const eventEntry = historyDataAll.find(entry => slugify(entry.event_name) === eventSlug);
+  const originalEventName = eventEntry.event_name;
 
-    const players = historyDataAll
-      .filter(entry => entry.event_name === eventName)
-      .sort((a, b) => a.rank_at_event - b.rank_at_event);
+  const eventPlayers = historyDataAll
+    .filter(entry => entry.event_name === originalEventName)
+    .sort((a, b) => a.rank_at_event - b.rank_at_event);
 
-    if (players.length === 0) {
-      return { players, averageRating: 0 };
-    }
+  const totalRating = eventPlayers.reduce((sum, player) => {
+    const rating = parseFloat(player.rating_after);
+    return sum + (isNaN(rating) ? 0 : rating);
+  }, 0);
+  const averageRating = totalRating / eventPlayers.length;
 
-    // --- THIS IS THE DEFINITIVE FIX ---
-    // We now calculate the total ELO using 'rating_after'. This is the most
-    // reliable number in the dataset and aligns with the homepage's difficulty metric.
-    const totalRating = players.reduce((sum, player) => {
-      // 1. Attempt to parse the rating_after value.
-      const ratingAfter = parseFloat(player.rating_after);
-  console.log(`Player: ${player.player_name}, rating_after:`, player.rating_after, `Type: ${typeof player.rating_after}`);
-      // 2. A simple safety check ensures we only add valid numbers.
-      if (!isNaN(ratingAfter)) {
-        return sum + ratingAfter;
-      }
-      return sum; // If it's not a number, add nothing for this player.
-    }, 0);
-
-    const averageRating = totalRating / players.length;
-
-    return { players, averageRating };
-  }, [eventName]);
-
-  if (loading) {
-    return <p>Loading event data...</p>;
-  }
-
-  if (!eventData) {
-    return <p>Event not found.</p>;
-  }
-
-  const eventDate = eventData.players.length > 0
-    ? new Date(eventData.players[0].event_date).toLocaleDateString(undefined, {
+  return {
+    props: {
+      eventName: originalEventName,
+      eventPlayers,
+      averageRating: averageRating.toFixed(2),
+    },
+    revalidate: 3600,
+  };
+}
+// The component now receives all its data as props.
+export default function EventPage({ eventName, eventPlayers, averageRating }) {
+  const eventDate = eventPlayers.length > 0
+    ? new Date(eventPlayers[0].event_date).toLocaleDateString(undefined, {
         year: 'numeric', month: 'long', day: 'numeric'
       })
     : '';
@@ -89,9 +78,8 @@ export default function EventPage() {
                 <h1 className={styles.title}>{stripDateFromEventName(eventName)}</h1>
                 <div className={styles.subtitleContainer}>
                     {eventDate && <p className={styles.subtitle}>{eventDate}</p>}
-                    {/* This will now display the correct, calculated average */}
                     <p className={`${styles.subtitle} ${styles.averageEloSubtitle}`}>
-                      • {eventData.averageRating.toFixed(2)} Avg ELO
+                      • {averageRating} Avg ELO
                     </p>
                 </div>
             </div>
@@ -106,7 +94,7 @@ export default function EventPage() {
               </tr>
             </thead>
             <tbody>
-              {eventData.players.map((player) => (
+              {eventPlayers.map((player) => (
                 <tr key={player.player_name}>
                   <td>#{player.rank_at_event}</td>
                   <td>

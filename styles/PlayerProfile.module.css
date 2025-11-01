@@ -136,7 +136,12 @@
 .chartWrapper {
   width: 100%; /* Explicitly set the width */
   height: 400px; /* Keep your existing height */
-  position: relative; /* This is often crucial for responsive containers */
+  
+  /* This prevents the grid item from collapsing before it has content,
+     which is a common cause of this warning with responsive charts. */
+  min-width: 0; 
+  
+  position: relative; /* This is crucial for responsive containers to measure correctly */
 }
 
 .matchHistoryContainer {

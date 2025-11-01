@@ -1,80 +1,84 @@
 // pages/player/[name].js
 
-"use client";
-
 import Head from 'next/head';
 import Link from 'next/link';
-import { useMemo, useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import dynamic from 'next/dynamic'; // Import dynamic
-
+import { useMemo } from 'react';
 import styles from '../../styles/PlayerProfile.module.css';
-import historyDataAll from '../../public/rating_history_full.json';
-import leaderboardData from '../../public/final_leaderboard.json';
 import { slugify } from '../../utils/slugify';
-import EventLogo from '../../components/EventLogo';
-import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
 import { stripDateFromEventName } from '../../utils/formatters';
+import UnoptimizedAvatar from '../../components/UnoptimizedAvatar';
+import EventLogo from '../../components/EventLogo';
+import PlayerChart from '../../components/PlayerChart'; // Assuming your chart is in this component
+import { loadData } from '../../lib/data'; // <-- Import the new loader
 
-// --- DYNAMICALLY IMPORT THE CHART COMPONENT ---
-// This tells Next.js to load the PlayerChart component in a separate JavaScript file.
-const PlayerChart = dynamic(() => import('../../components/PlayerChart'), {
-  // This content will be shown while the chart component is loading.
-  loading: () => <p style={{ textAlign: 'center', minHeight: '400px' }}>Loading chart...</p>,
-  // This is crucial: it ensures the chart is only ever rendered on the client-side.
-  ssr: false, 
-});
+// --- THIS FUNCTION RUNS AT BUILD TIME ON THE SERVER ---
+// It tells Next.js which player pages to generate.
+export async function getStaticPaths() {
+  const fs = require('fs');
+  const path = require('path');
 
-export default function PlayerProfile() {
-  const router = useRouter();
-  const { name } = router.query;
+  const publicDirectory = path.join(process.cwd(), 'public');
+  const leaderboardData = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'final_leaderboard.json'), 'utf8'));
 
-  const [playerName, setPlayerName] = useState('');
-  const [playerSummary, setPlayerSummary] = useState(null);
-  const [eventHistory, setEventHistory] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [peakRating, setPeakRating] = useState('0.00');
-  const [loading, setLoading] = useState(true);
+  const paths = leaderboardData.map((player) => ({
+    params: { name: encodeURIComponent(player.Player_Name) },
+  }));
 
-  useEffect(() => {
-    if (!router.isReady) return;
+  // fallback: false means any path not generated at build time will result in a 404.
+  return { paths, fallback: false };
+}
 
-    const decodedName = decodeURIComponent(name);
-    setPlayerName(decodedName);
+// --- THIS FUNCTION RUNS AT BUILD TIME FOR EACH PLAYER ---
+// It fetches and processes the data for a single player page.
+export async function getStaticProps({ params }) {
+  const name = decodeURIComponent(params.name);
+  
+  // --- MODIFICATION: Use the cached loader ---
+  const { leaderboardData, historyDataAll } = loadData();
 
-    const playerHistoryRaw = Array.isArray(historyDataAll) ? historyDataAll : Object.values(historyDataAll);
-    const playerHistoryChronological = playerHistoryRaw
-      .filter(entry => entry.player_name === decodedName)
-      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  const playerSummary = leaderboardData.find(player => player.Player_Name === name);
+  const playerHistoryChronological = historyDataAll
+    .filter(entry => entry.player_name === name)
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
-    const summary = leaderboardData.find(player => player.Player_Name === decodedName);
-    setPlayerSummary(summary);
+  let peakRating = 0;
 
-    if (playerHistoryChronological.length) {
-      let peak = 0;
-      const calculatedChartData = playerHistoryChronological.map((entry, index) => {
-        const rating = parseFloat(entry.rating_after);
-        if (rating > peak) peak = rating;
-        const previousRating = index > 0 ? parseFloat(playerHistoryChronological[index - 1].rating_after) : 1000.00;
-        const ratingChange = rating - previousRating;
-
-        return {
-          date: new Date(entry.event_date).toISOString(),
-          rating: rating,
-          event: entry.event_name,
-          change: ratingChange.toFixed(2),
-          rank: entry.rank_at_event || null,
-        };
-      });
-      
-      setChartData(calculatedChartData);
-      setPeakRating(peak.toFixed(2));
-      setEventHistory([...playerHistoryChronological].reverse());
+  // Calculate chart data and peak rating
+  const chartData = playerHistoryChronological.map((entry, index) => {
+    const rating = parseFloat(entry.rating_after);
+    if (rating > peakRating) {
+      peakRating = rating;
     }
-    
-    setLoading(false);
-  }, [router.isReady, name]);
+    const previousRating = index > 0 ? parseFloat(playerHistoryChronological[index - 1].rating_after) : 1000.00;
+    const ratingChange = rating - previousRating;
 
+    return {
+      date: new Date(entry.event_date).toISOString(),
+      rating: rating,
+      event: entry.event_name,
+      change: ratingChange.toFixed(2),
+      rank: entry.rank_at_event || null,
+    };
+  });
+  
+  // Create a reversed version for the UI list (newest first)
+  const eventHistoryForList = [...playerHistoryChronological].reverse();
+
+  return {
+    props: {
+      playerName: name,
+      playerSummary,
+      eventHistory: eventHistoryForList,
+      chartData,
+      peakRating: peakRating.toFixed(2),
+    },
+    revalidate: 3600, // Re-generate the page at most once per hour
+  };
+}
+
+// The component now receives all its data as props and has no client-side fetching.
+export default function PlayerProfile({ playerName, playerSummary, eventHistory, chartData, peakRating }) {
+  // This memo hook still runs on the client to format the date object for the chart library.
   const processedChartData = useMemo(() => {
     return chartData.map(entry => ({
       ...entry,
@@ -91,10 +95,6 @@ export default function PlayerProfile() {
     return '';
   };
 
-  if (loading) {
-    return <p>Loading player data...</p>;
-  }
-
   if (!playerSummary) {
     return <p>Player not found.</p>;
   }
@@ -104,21 +104,13 @@ export default function PlayerProfile() {
       <Head>
         <title>{playerName}'s Profile</title>
       </Head>
-
       <main className={styles.main}>
         <Link href="/" className={styles.backLink}>
           &larr; Back to Leaderboard
         </Link>
-        
         <header className={styles.profileHeader}>
           <div className={styles.profileTitle}>
-            <UnoptimizedAvatar
-              playerName={playerName}
-              alt={`${playerName}'s skin`}
-              width={80}  // A larger size for the header
-              height={80}
-              className={styles.profileAvatar}
-            />
+            <UnoptimizedAvatar playerName={playerName} alt={`${playerName}'s skin`} width={80} height={80} className={styles.profileAvatar} />
             <h1 className={styles.playerName}>{playerName}</h1>
           </div>
           <div className={styles.statsContainer}>
@@ -136,17 +128,13 @@ export default function PlayerProfile() {
             </div>
           </div>
         </header>
-
         <div className={styles.gridContainer}>
           <div className={styles.dataCard}>
             <h2 className={styles.sectionTitle}>Rating Progression</h2>
             <div className={styles.chartWrapper}>
-              {/* --- THIS IS THE ONLY CHANGE IN THE JSX --- */}
-              {/* Instead of the big block of chart JSX, we just call our new component */}
               <PlayerChart chartData={processedChartData} />
             </div>
           </div>
-
           <div className={styles.dataCard}>
             <h2 className={styles.sectionTitle}>Event History</h2>
             <div className={styles.matchHistoryContainer}>
@@ -157,9 +145,7 @@ export default function PlayerProfile() {
                       <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink}>
                         <div className={styles.eventNameWrapper}>
                           <EventLogo eventName={event.event_name} size={24} />
-                          <span className={styles.eventName}>
-                            {stripDateFromEventName(event.event_name)} {/* <-- USE IT HERE */}
-                          </span>
+                          <span className={styles.eventName}>{stripDateFromEventName(event.event_name)}</span>
                         </div>
                         <span className={`${styles.eventRank} ${getRankClassName(event.rank_at_event)}`}>
                           #{event.rank_at_event}

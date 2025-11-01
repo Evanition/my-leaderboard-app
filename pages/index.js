@@ -5,14 +5,14 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
-import fs from 'fs';
-import path from 'path';
+import { loadData } from '../lib/data';
 import styles from '../styles/Home.module.css';
 import { slugify } from '../utils/slugify';
 import { extractDateFromEventName, stripDateFromEventName } from '../utils/formatters';
 import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
 import EventLogo from '../components/EventLogo';
 
+// Helper function needs to be available in the server-side scope of getStaticProps
 const getDifficultyTier = (avgRating) => {
   if (!avgRating) return { tier: 'Unknown', className: 'tierUnknown' };
   if (avgRating >= 1600) return { tier: 'Legendary', className: 'tierLegendary' };
@@ -32,10 +32,11 @@ const getDifficultyTier = (avgRating) => {
 const ITEMS_PER_PAGE = 100;
 
 export async function getStaticProps() {
+  const fs = require('fs');
+  const path = require('path');
+  
   console.log('Running getStaticProps: Pre-calculating all data and creating hybrid data split...');
-  const publicDirectory = path.join(process.cwd(), 'public');
-  const leaderboardData = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'final_leaderboard.json'), 'utf8'));
-  const historyDataAll = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'rating_history_full.json'), 'utf8'));
+  const { leaderboardData, historyDataAll } = loadData();
 
   const peakRatings = new Map();
   for (const entry of historyDataAll) {
@@ -71,6 +72,7 @@ export async function getStaticProps() {
     data.difficultyTier = difficulty.tier;
     data.difficultyClassName = difficulty.className;
   }
+
   const uniqueNames = [...new Set(historyDataAll.map(e => e.event_name))];
   const initialEvents = uniqueNames
     .filter(name => name && name !== "Rating Decay")
@@ -89,14 +91,16 @@ export async function getStaticProps() {
       };
     });
 
-  const firstPagePlayers = allPlayersWithPeak.slice(0, ITEMS_PER_PAGE);
+  // --- THIS IS THE CORRECTED SECTION ---
+  // Define publicDirectory here so it's available in this scope.
+  const publicDirectory = path.join(process.cwd(), 'public');
   const fullPlayerDataPath = path.join(publicDirectory, 'full_player_data.json');
   fs.writeFileSync(fullPlayerDataPath, JSON.stringify(allPlayersWithPeak));
-  console.log(`+ Saved full processed player data to ${fullPlayerDataPath}`);
+  console.log(`+ Successfully saved full processed player data.`);
 
   return {
     props: {
-      initialPlayers: firstPagePlayers,
+      initialPlayers: allPlayersWithPeak.slice(0, ITEMS_PER_PAGE),
       initialEvents,
     },
     revalidate: 3600,
