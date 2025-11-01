@@ -5,7 +5,8 @@ const nextConfig = {
   reactStrictMode: true,
   // We no longer need the 'images' configuration since all images are local.
   // You can remove this section entirely if you want.
-  images: {},
+  
+  images: {unoptimized: true},
   
   async headers() {
     const aMonthInSeconds = '2592000';
