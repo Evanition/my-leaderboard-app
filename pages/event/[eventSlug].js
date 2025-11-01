@@ -106,7 +106,7 @@ export default function EventPage({ eventName, eventPlayers, averageRating }) {
                         height={32}
                         className={styles.playerAvatar}
                       />
-                      <Link href={`/player/${encodeURIComponent(player.player_name)}`}>
+                      <Link href={`/player/${encodeURIComponent(player.player_name)}`} prefetch={false}>
                         {player.player_name}
                       </Link>
                     </div>

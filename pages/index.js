@@ -244,7 +244,7 @@ export default function Home({ initialPlayers, initialEvents }) {
                         <td>
                           <div className={styles.playerCell}>
                             <UnoptimizedAvatar playerName={player.Player_Name} alt={`${player.Player_Name}'s skin`} width={32} height={32} className={styles.playerAvatar} />
-                            <Link href={`/player/${encodeURIComponent(player.Player_Name)}`}>
+                            <Link href={`/player/${encodeURIComponent(player.Player_Name)}`} prefetch={false}>
                               {player.Player_Name}
                             </Link>
                           </div>

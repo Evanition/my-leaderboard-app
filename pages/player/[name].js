@@ -142,7 +142,7 @@ export default function PlayerProfile({ playerName, playerSummary, eventHistory,
                 <ul className={styles.eventList}>
                   {participatedEvents.map((event, index) => (
                     <li key={index} className={styles.eventItem}>
-                      <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink}>
+                      <Link href={`/event/${slugify(event.event_name)}`} className={styles.eventLink} prefetch={false}>
                         <div className={styles.eventNameWrapper}>
                           <EventLogo eventName={event.event_name} size={24} />
                           <span className={styles.eventName}>{stripDateFromEventName(event.event_name)}</span>
