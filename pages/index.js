@@ -13,9 +13,8 @@ import { extractDateFromEventName, stripDateFromEventName } from '../utils/forma
 import UnoptimizedAvatar from '../components/UnoptimizedAvatar';
 import EventLogo from '../components/EventLogo';
 
-// This helper function needs to be outside the component to be used in getStaticProps
 const getDifficultyTier = (avgRating) => {
-  if (!avgRating) return { tier: 'Unknown', className: 'tierUnknown' }; // Use strings for class names
+  if (!avgRating) return { tier: 'Unknown', className: 'tierUnknown' };
   if (avgRating >= 1600) return { tier: 'Legendary', className: 'tierLegendary' };
   if (avgRating >= 1500) return { tier: 'Master', className: 'tierMaster' };
   if (avgRating >= 1400) return { tier: 'Expert', className: 'tierExpert' };
@@ -30,14 +29,14 @@ const getDifficultyTier = (avgRating) => {
   return { tier: 'Noob', className: 'tierNoob' };
 };
 
-// --- THIS FUNCTION RUNS ON THE SERVER AT BUILD TIME ---
+const ITEMS_PER_PAGE = 100;
+
 export async function getStaticProps() {
-  console.log('Running getStaticProps: Pre-calculating all data for the home page...');
+  console.log('Running getStaticProps: Pre-calculating all data and creating hybrid data split...');
   const publicDirectory = path.join(process.cwd(), 'public');
   const leaderboardData = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'final_leaderboard.json'), 'utf8'));
   const historyDataAll = JSON.parse(fs.readFileSync(path.join(publicDirectory, 'rating_history_full.json'), 'utf8'));
 
-  // --- 1. PRE-CALCULATE PEAK RATINGS ---
   const peakRatings = new Map();
   for (const entry of historyDataAll) {
     const rating = parseFloat(entry.rating_after);
@@ -47,12 +46,11 @@ export async function getStaticProps() {
       peakRatings.set(entry.player_name, rating);
     }
   }
-  const initialPlayers = leaderboardData.map(player => ({
+  const allPlayersWithPeak = leaderboardData.map(player => ({
     ...player,
     peakRating: peakRatings.get(player.Player_Name) || player.Rating,
   }));
 
-  // --- 2. PRE-CALCULATE EVENT DIFFICULTIES ---
   const eventDifficultyMap = new Map();
   for (const entry of historyDataAll) {
     if (!entry.event_name || entry.event_name === "Rating Decay") continue;
@@ -91,28 +89,48 @@ export async function getStaticProps() {
       };
     });
 
+  const firstPagePlayers = allPlayersWithPeak.slice(0, ITEMS_PER_PAGE);
+  const fullPlayerDataPath = path.join(publicDirectory, 'full_player_data.json');
+  fs.writeFileSync(fullPlayerDataPath, JSON.stringify(allPlayersWithPeak));
+  console.log(`+ Saved full processed player data to ${fullPlayerDataPath}`);
+
   return {
     props: {
-      initialPlayers,
+      initialPlayers: firstPagePlayers,
       initialEvents,
     },
     revalidate: 3600,
   };
 }
 
-const ITEMS_PER_PAGE = 100;
-
 export default function Home({ initialPlayers, initialEvents }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('players');
-  const [playerData, setPlayerData] = useState(initialPlayers);
+  const [allPlayers, setAllPlayers] = useState(initialPlayers);
   const [eventData, setEventData] = useState(initialEvents);
+  const [hasFetchedAll, setHasFetchedAll] = useState(initialPlayers.length < ITEMS_PER_PAGE);
   const [playerSort, setPlayerSort] = useState('current');
   const [eventSort, setEventSort] = useState('newest');
   const [playerSortDirection, setPlayerSortDirection] = useState('desc');
   const [eventSortDirection, setEventSortDirection] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    if (hasFetchedAll) return;
+    const fetchFullPlayerData = async () => {
+      try {
+        const res = await fetch('/full_player_data.json');
+        const fullData = await res.json();
+        setAllPlayers(fullData);
+        setHasFetchedAll(true);
+      } catch (error) {
+        console.error("Failed to fetch full player data:", error);
+        setHasFetchedAll(true);
+      }
+    };
+    fetchFullPlayerData();
+  }, [hasFetchedAll]);
+  
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, playerSort, playerSortDirection]);
@@ -136,9 +154,9 @@ export default function Home({ initialPlayers, initialEvents }) {
   };
 
   const filteredPlayers = useMemo(() => {
-    if (!playerData) return [];
+    if (!allPlayers) return [];
     const sortMultiplier = playerSortDirection === 'desc' ? 1 : -1;
-    const sortedPlayers = [...playerData].sort((a, b) => {
+    const sortedPlayers = [...allPlayers].sort((a, b) => {
       if (playerSort === 'peak') {
         return (b.peakRating - a.peakRating) * sortMultiplier;
       }
@@ -147,7 +165,7 @@ export default function Home({ initialPlayers, initialEvents }) {
     return sortedPlayers.filter(player =>
       player.Player_Name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [playerData, searchQuery, playerSort, playerSortDirection]);
+  }, [allPlayers, searchQuery, playerSort, playerSortDirection]);
 
   const sortedEvents = useMemo(() => {
     if (!eventData) return [];
@@ -166,7 +184,7 @@ export default function Home({ initialPlayers, initialEvents }) {
       return b.name.localeCompare(a.name) * sortMultiplier;
     });
   }, [eventData, eventSort, eventSortDirection]);
-
+  
   const paginatedPlayers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredPlayers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -174,7 +192,6 @@ export default function Home({ initialPlayers, initialEvents }) {
 
   const totalPages = Math.ceil(filteredPlayers.length / ITEMS_PER_PAGE);
   const filteredEvents = useMemo(() => {
-    // It should filter from 'sortedEvents', not a non-existent variable.
     return sortedEvents.filter(event =>
       event.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -247,7 +264,7 @@ export default function Home({ initialPlayers, initialEvents }) {
                 <span className={styles.paginationInfo}>
                   Page {currentPage} of {totalPages}
                 </span>
-                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className={styles.paginationButton}>
+                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || !hasFetchedAll} className={styles.paginationButton}>
                   Next &rarr;
                 </button>
               </div>
